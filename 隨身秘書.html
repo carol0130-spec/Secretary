@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CL 隨身秘書</title>
+<link rel="icon" id="favicon" href="">
+<style>
+  :root{
+    --paper:#F2EEE7; --card:#FFFFFF; --ink:#3A4048; --ink-muted:#6B6459; --ink-faint:#9C9488; --rule:#E2DDD1;
+    --mark-c:#3A4854; --mark-l:#C4962E;
+    --urgent:#B5462F; --urgent-bg:#F7E3DD; --overdue:#7C2E1D; --overdue-bg:#F0D3C9;
+    --soon:#A3781E; --soon-bg:#F5EAD2; --calm:#5C7A6E; --calm-bg:#E5EEE9;
+    --info:#5A7085; --info-bg:#E7ECF0; --thsr:#8A5A2E; --thsr-bg:#F3E8D9;
+    --vip:#A3781E; --vip-bg:#F5EAD2;
+    --nav-bg:#FFFFFF; --shadow: 0 -1px 0 rgba(0,0,0,0.06);
+  }
+  [data-theme="dark"]{
+    --paper:#241E1A; --card:#2F2823; --ink:#EDE6DA; --ink-muted:#B7ADA0; --ink-faint:#847A6E; --rule:#3E362F;
+    --mark-c:#B98CA0; --mark-l:#D9AE5C;
+    --urgent:#E08A6E; --urgent-bg:#3E2A22; --overdue:#E8A489; --overdue-bg:#3E2620;
+    --soon:#D9B66C; --soon-bg:#3A331F; --calm:#8FAA9C; --calm-bg:#243430;
+    --info:#93AAC0; --info-bg:#232B33; --thsr:#D3AD73; --thsr-bg:#332A1C;
+    --vip:#D9B66C; --vip-bg:#3A331F;
+    --nav-bg:#2F2823; --shadow: 0 -1px 0 rgba(0,0,0,0.3);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:76px;
+    transition:background .2s ease,color .2s ease;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:0 16px;}
+
+  /* ---- top bar ---- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px;max-width:520px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand svg{width:30px;height:30px;flex-shrink:0;}
+  .brand-name{font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;font-weight:700;font-size:18px;}
+  .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--card);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .icon-btn svg{width:18px;height:18px;}
+  .top-actions{display:flex;gap:8px;}
+
+  .datebar{font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;font-style:italic;font-size:13px;color:var(--ink-faint);padding:0 16px 10px;max-width:520px;margin:0 auto;}
+
+  /* ---- bottom nav ---- */
+  .bottomnav{
+    position:fixed;left:0;right:0;bottom:0;background:var(--nav-bg);border-top:1px solid var(--rule);
+    box-shadow:var(--shadow);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:40;
+  }
+  .navitem{
+    display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;min-width:60px;min-height:48px;
+    color:var(--ink-faint);cursor:pointer;border-radius:10px;
+  }
+  .navitem.active{color:var(--mark-c);}
+  .navitem svg{width:22px;height:22px;}
+  .navitem span{font-size:10.5px;font-weight:600;}
+
+  /* ---- settings modal ---- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:50;display:none;}
+  .modal-overlay.open{display:block;}
+  .modal-sheet{
+    position:fixed;left:0;right:0;bottom:0;background:var(--card);border-radius:16px 16px 0 0;
+    padding:20px 20px calc(24px + env(safe-area-inset-bottom));z-index:51;
+    max-height:80vh;overflow-y:auto;transform:translateY(100%);transition:transform .25s ease;
+  }
+  .modal-overlay.open .modal-sheet{transform:translateY(0);}
+  .modal-handle{width:36px;height:4px;background:var(--rule);border-radius:99px;margin:0 auto 16px;}
+  .modal-title{font-family:Georgia,serif;font-size:18px;font-weight:700;margin-bottom:16px;}
+  .field-block{margin-bottom:18px;}
+  .field-block label{font-size:12px;color:var(--ink-faint);display:block;margin-bottom:6px;}
+  .field-block input[type=text]{
+    width:100%;font-size:16px;padding:11px 12px;border:1px solid var(--rule);border-radius:8px;
+    background:var(--paper);color:var(--ink);font-family:inherit;
+  }
+  .weather-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--ink-muted);}
+  .weather-row svg{width:22px;height:22px;}
+  .theme-toggle{display:flex;gap:8px;}
+  .theme-opt{
+    flex:1;padding:12px;border:1px solid var(--rule);border-radius:8px;text-align:center;font-size:13px;
+    cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .theme-opt.active{border-color:var(--mark-c);background:var(--info-bg);font-weight:700;}
+  .modal-close{
+    width:100%;padding:12px;border-radius:8px;background:var(--mark-c);color:#fff;border:none;
+    font-size:14px;font-weight:600;cursor:pointer;min-height:44px;margin-top:6px;
+  }
+
+  /* ---- panels ---- */
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  .section-eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;margin-bottom:8px;}
+  .section-title{font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;font-size:19px;font-weight:700;margin:0 0 12px;}
+
+  /* ---- greeting / briefing ---- */
+  .greeting-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
+  .greeting{font-family:Georgia,serif;font-size:22px;font-weight:700;margin:4px 0 2px;}
+  .greeting-sub{font-size:13px;color:var(--ink-muted);margin-bottom:16px;}
+  .refresh-line{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink-faint);margin-bottom:14px;}
+  .refresh-line button{background:none;border:none;color:var(--info);font-size:11.5px;cursor:pointer;font-weight:600;min-height:32px;}
+
+  .decision-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+  .decision-card .dc-text{font-size:13.5px;line-height:1.55;margin-bottom:10px;}
+  .decision-card .dc-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .dc-btn{
+    font-size:12.5px;padding:9px 13px;border-radius:99px;border:1px solid var(--rule);background:var(--paper);
+    color:var(--ink);cursor:pointer;min-height:36px;
+  }
+  .dc-btn.primary{background:var(--mark-c);color:#fff;border-color:var(--mark-c);}
+  .dc-resolved{font-size:12px;color:var(--calm);display:flex;align-items:center;gap:5px;}
+
+  .scanbar{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--rule);margin:0 0 22px;padding-bottom:16px;}
+  .scanstat{flex:1 1 45%;padding:6px 10px 6px 0;}
+  .scanstat .num{font-family:Georgia,serif;font-size:22px;font-weight:700;line-height:1;}
+  .scanstat .num.overdue{color:var(--overdue);}
+  .scanstat .lbl{font-size:11px;color:var(--ink-muted);margin-top:3px;}
+
+  .briefing{margin-bottom:30px;}
+  .category{margin-bottom:26px;}
+
+  /* ---- item cards (shared) ---- */
+  .item{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--info);border-radius:10px;padding:13px 14px;margin-bottom:9px;display:flex;gap:12px;align-items:flex-start;}
+  .item.urgent{border-left-color:var(--urgent);}
+  .item.soon{border-left-color:var(--soon);}
+  .item.calm{border-left-color:var(--calm);}
+  .item.overdue{border-left-color:var(--overdue);}
+  .item.vip{box-shadow:inset 0 0 0 1px var(--vip);}
+  .item.done{opacity:.45;}
+  .item-check{margin-top:2px;flex-shrink:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;}
+  .item-check input{width:20px;height:20px;cursor:pointer;accent-color:var(--mark-c);}
+  .item-body{flex:1;min-width:0;}
+  .item-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap;}
+  .item-subject{font-size:14px;font-weight:600;line-height:1.35;}
+  .item.done .item-subject{text-decoration:line-through;}
+  .item-tags{display:flex;gap:5px;flex-wrap:wrap;}
+  .item-tag{font-size:10px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:99px;white-space:nowrap;}
+  .tag-urgent{background:var(--urgent-bg);color:var(--urgent);}
+  .tag-soon{background:var(--soon-bg);color:var(--soon);}
+  .tag-calm{background:var(--calm-bg);color:var(--calm);}
+  .tag-info{background:var(--info-bg);color:var(--info);}
+  .tag-overdue{background:var(--overdue-bg);color:var(--overdue);}
+  .tag-vip{background:var(--vip-bg);color:var(--vip);}
+  .item-meta{font-size:11.5px;color:var(--ink-muted);margin-top:2px;}
+  .item-src{display:inline-block;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;margin-right:5px;background:var(--info-bg);color:var(--info);}
+  .item-src.cal{background:var(--calm-bg);color:var(--calm);}
+  .item-src.doc{background:var(--thsr-bg);color:var(--thsr);}
+  .item-src.action{background:#EAE6F3;color:#6B5A98;}
+  [data-theme="dark"] .item-src.action{background:#332C42;color:#B7A6D9;}
+  .item-reason{font-size:12px;color:var(--ink-muted);margin-top:5px;line-height:1.5;}
+  .item-note{margin-top:9px;width:100%;font-size:16px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;font-family:inherit;background:var(--paper);color:var(--ink);resize:vertical;min-height:38px;}
+  .item-note-label{font-size:10px;color:var(--ink-faint);margin-top:8px;}
+  .empty{background:var(--card);border:1px dashed var(--rule);border-radius:10px;padding:22px 16px;text-align:center;color:var(--ink-faint);font-size:13px;}
+
+  .thsr-chip{margin-top:9px;background:var(--thsr-bg);border-radius:8px;padding:8px 10px;font-size:11.5px;color:var(--thsr);display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .thsr-chip a{color:var(--thsr);font-weight:700;text-decoration:underline;}
+  .thsr-chip svg{width:16px;height:16px;flex-shrink:0;}
+  .mail-reminder-link{
+    margin-top:9px;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--info);
+    text-decoration:none;background:var(--info-bg);border-radius:8px;padding:7px 10px;min-height:32px;
+  }
+  .mail-reminder-link svg{width:15px;height:15px;flex-shrink:0;}
+
+  .transit-box{margin-top:9px;background:var(--info-bg);border-radius:8px;padding:10px 11px;}
+  .transit-box .t-label{font-size:10px;color:var(--ink-faint);letter-spacing:.03em;margin-bottom:6px;}
+  .transit-box .t-row{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:7px;color:var(--ink);}
+  .transit-box .t-row:last-child{margin-bottom:0;}
+  .transit-box label{display:flex;align-items:center;gap:7px;flex:1;cursor:pointer;min-height:26px;}
+  .transit-box input[type=checkbox]{width:18px;height:18px;accent-color:var(--mark-c);flex-shrink:0;}
+  .transit-box input[type=date]{font-size:13px;padding:5px 7px;border:1px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink);}
+  .transit-box .t-del{font-size:10.5px;color:var(--ink-faint);text-decoration:underline;cursor:pointer;white-space:nowrap;min-height:24px;}
+
+  .prep-box{margin-top:9px;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px 11px;}
+  .prep-box .lbl{font-size:10.5px;color:var(--ink-faint);display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;}
+  .prep-box textarea{width:100%;min-height:56px;font-size:16px;font-family:inherit;padding:8px 9px;border:1px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink);}
+  .mini-btn{font-size:11px;background:var(--mark-c);color:#fff;border:none;border-radius:99px;padding:6px 11px;cursor:pointer;min-height:30px;white-space:nowrap;}
+  .mini-btn:disabled{opacity:.5;}
+  .mini-status{font-size:10.5px;color:var(--ink-faint);margin-top:4px;}
+
+  /* ---- weekly (vertical) ---- */
+  .grid-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .grid-head .icon-btn{width:34px;height:34px;}
+  .grid-head .icon-btn svg{width:16px;height:16px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px;}
+  .cal-grid .cg-dow{font-size:10.5px;color:var(--ink-faint);text-align:center;padding-bottom:4px;font-weight:600;}
+  .cal-cell{
+    aspect-ratio:1/1;border-radius:8px;background:var(--card);border:1px solid var(--rule);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;
+    font-size:12.5px;color:var(--ink);cursor:default;
+  }
+  .cal-cell.blank{background:transparent;border:none;}
+  .cal-cell.has-events{cursor:pointer;}
+  .cal-cell.today{border-color:var(--mark-c);border-width:2px;font-weight:700;}
+  .cal-cell .cg-dot{width:5px;height:5px;border-radius:50%;background:var(--mark-l);margin-top:3px;}
+  .cal-cell .cg-dot.urgent-dot{background:var(--urgent);}
+  .cal-cell .cg-count{position:absolute;top:2px;right:4px;font-size:8.5px;color:var(--ink-faint);}
+  .day-block{margin-bottom:18px;}
+  .day-block.flash{animation:flashHighlight 1.2s ease;}
+  @keyframes flashHighlight{0%{background:var(--info-bg);border-radius:10px;}100%{background:transparent;}}
+  .day-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .day-head .d-label{font-family:Georgia,serif;font-weight:700;font-size:15px;}
+  .day-head.today .d-label{color:var(--mark-c);}
+  .day-head .d-dot{width:7px;height:7px;border-radius:50%;background:var(--mark-l);}
+  .day-empty-line{font-size:12px;color:var(--ink-faint);padding-left:2px;}
+
+  /* ---- docs tab ---- */
+  .doc-upload{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:22px;}
+  .type-select{display:flex;gap:10px;margin-bottom:10px;font-size:13px;flex-wrap:wrap;}
+  .type-select label{display:flex;align-items:center;gap:5px;cursor:pointer;min-height:32px;}
+  .doc-upload textarea{width:100%;min-height:110px;font-size:16px;font-family:inherit;padding:10px;border:1px solid var(--rule);border-radius:8px;resize:vertical;background:var(--paper);color:var(--ink);}
+  .doc-upload .row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+  .doc-upload input[type=file]{font-size:12px;}
+  .btn{background:var(--mark-c);color:#fff;border:none;border-radius:8px;padding:11px 18px;font-size:13.5px;font-weight:600;cursor:pointer;min-height:44px;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .btn.secondary{background:transparent;color:var(--ink);border:1px solid var(--rule);}
+  .btn.block{width:100%;}
+  .doc-hint{font-size:11.5px;color:var(--ink-faint);margin-top:8px;line-height:1.5;}
+  .draft-box{margin-top:10px;}
+  .draft-box .lbl{font-size:10.5px;color:var(--ink-faint);margin-bottom:4px;display:flex;justify-content:space-between;}
+  .draft-box textarea{width:100%;min-height:100px;font-size:13.5px;font-family:inherit;padding:9px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);}
+  .status-line{font-size:12px;color:var(--ink-muted);margin-top:8px;min-height:16px;}
+  .status-line.err{color:var(--urgent);}
+
+  /* ---- lab tab ---- */
+  .calc-box .calc-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+  .calc-field label{font-size:11px;color:var(--ink-faint);}
+  .calc-field-row{display:flex;gap:8px;}
+  .calc-field-row .calc-field{flex:1;}
+  .calc-field input,.calc-field select{font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;font-family:inherit;background:var(--paper);color:var(--ink);width:100%;}
+  .calc-result{margin-top:12px;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px;font-size:13px;line-height:1.7;min-height:20px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;}
+  .calc-result:empty{display:none;}
+  .calc-result table{width:100%;border-collapse:collapse;font-size:12px;}
+  .calc-result th,.calc-result td{border-bottom:1px solid var(--rule);padding:5px 6px;text-align:left;}
+  .calc-result th{color:var(--ink-faint);font-weight:600;font-family:-apple-system,sans-serif;}
+
+  .group-card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .group-field{margin-bottom:12px;display:flex;flex-direction:column;gap:5px;}
+  .group-field label{font-size:11px;color:var(--ink-faint);}
+  .group-field input,.group-field textarea{font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;font-family:inherit;background:var(--paper);color:var(--ink);}
+  .group-field textarea{min-height:44px;resize:vertical;}
+  .group-treatments .glbl{font-size:11px;color:var(--ink-faint);margin-bottom:6px;}
+  .add-treatment-row{display:flex;gap:8px;margin-top:8px;}
+  .add-treatment-row input{flex:1;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);}
+  .group-foot{display:flex;justify-content:flex-end;margin-top:10px;}
+  .group-foot span{font-size:11px;color:var(--ink-faint);cursor:pointer;text-decoration:underline;min-height:32px;display:inline-flex;align-items:center;}
+
+  .note-card{background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--mark-l);border-radius:10px;padding:12px 14px;margin-bottom:9px;}
+  .note-card .note-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .note-card .note-title{font-size:13.5px;font-weight:600;}
+  .note-card .note-del{font-size:11px;color:var(--ink-faint);cursor:pointer;text-decoration:underline;white-space:nowrap;}
+  .note-card .note-body{font-size:12px;color:var(--ink-muted);margin-top:6px;white-space:pre-wrap;line-height:1.6;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .edit-box{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);}
+  .edit-box input{width:100%;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);font-family:inherit;}
+  .edit-box .row{display:flex;gap:8px;}
+  .edit-box .row input{flex:1;}
+  .suggestion-chip{display:flex;align-items:center;gap:8px;background:var(--calm-bg);color:var(--calm);border-radius:10px;padding:8px 10px;font-size:12.5px;margin-bottom:8px;flex-wrap:wrap;}
+  .suggestion-chip select{font-size:12px;border-radius:6px;border:1px solid var(--rule);padding:4px 6px;}
+  .suggestion-chip button{background:var(--calm);color:#fff;border:none;border-radius:99px;padding:5px 11px;font-size:11px;cursor:pointer;min-height:30px;}
+
+  details{margin-top:6px;}
+  summary{cursor:pointer;font-size:12px;color:var(--ink-faint);list-style:none;display:inline-flex;align-items:center;gap:5px;min-height:32px;}
+  summary::-webkit-details-marker{display:none;}
+  summary:before{content:"▸";font-size:10px;}
+  details[open] summary:before{content:"▾";}
+  .noise-list{margin-top:10px;font-size:12px;color:var(--ink-muted);line-height:2;}
+  .noise-list span{display:inline-block;background:var(--info-bg);color:var(--info);padding:2px 9px;border-radius:99px;margin:0 6px 6px 0;}
+
+  footer{margin:36px 0 8px;padding-top:14px;border-top:1px solid var(--rule);font-size:11px;color:var(--ink-faint);line-height:1.7;}
+</style>
+</head>
+<body data-theme="light">
+<div class="topbar">
+  <div class="brand" id="brandMark"></div>
+  <div class="top-actions">
+    <div class="icon-btn" id="settingsBtn" title="設定">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+  </div>
+</div>
+<div class="datebar" id="todayDate"></div>
+
+<div class="wrap" id="mainWrap">
+
+  <!-- ===================== TODAY PANEL ===================== -->
+  <div class="panel active" id="panel-today">
+    <div class="greeting-row">
+      <div>
+        <div class="greeting" id="greetingText"></div>
+        <div class="greeting-sub" id="greetingSub"></div>
+      </div>
+    </div>
+    <details id="calImportDetails" style="margin:-4px 0 16px;">
+      <summary>＋ 新增或匯入行事曆</summary>
+      <div class="doc-upload" style="margin-top:10px;">
+        <div class="field-block" style="margin-bottom:12px;">
+          <label>手動新增一筆行程</label>
+          <input type="text" id="newEventTitle" placeholder="標題，例如：與王經理開會" style="width:100%;font-size:16px;padding:10px;border:1px solid var(--rule);border-radius:8px;margin-bottom:8px;background:var(--paper);color:var(--ink);">
+          <div class="row" style="margin-top:0;">
+            <input type="date" id="newEventDate" style="flex:1;font-size:16px;padding:10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);">
+            <input type="text" id="newEventTime" placeholder="時間，例如 14:00" style="flex:1;font-size:16px;padding:10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);">
+          </div>
+          <input type="text" id="newEventLocation" placeholder="地點（選填）" style="width:100%;font-size:16px;padding:10px;border:1px solid var(--rule);border-radius:8px;margin-top:8px;background:var(--paper);color:var(--ink);">
+          <div class="row"><button class="btn block" id="addEventBtn">新增這筆行程</button></div>
+        </div>
+        <div class="field-block" style="margin-bottom:12px;">
+          <label>或匯入 .ics 行事曆檔案（Google/Outlook 皆可匯出）</label>
+          <input type="file" id="icsFile" accept=".ics">
+          <div class="row"><button class="btn secondary block" id="importIcsBtn">匯入</button></div>
+          <div class="doc-hint">簡易解析器，讀取每筆事件的標題、日期、時間、地點；不支援重複性事件的完整規則展開。</div>
+        </div>
+        <div class="field-block" style="margin-bottom:6px;">
+          <label>或上傳行事曆截圖（AI 辨識）</label>
+          <input type="file" id="calScreenshotFile" accept="image/*">
+          <div class="row"><button class="btn secondary block" id="importScreenshotBtn">分析截圖並匯入</button></div>
+          <div class="doc-hint">AI 會判讀截圖裡看得到的行程；截圖不清楚或年份不明時可能判讀有誤，建議匯入後檢查一下、有需要用「編輯」修正。</div>
+        </div>
+        <div class="status-line" id="calImportStatus"></div>
+      </div>
+      <div id="customEventList" style="margin-top:12px;"></div>
+    </details>
+    <div class="refresh-line">
+      <span id="briefingUpdated"></span>
+      <button id="refreshBriefingBtn">重新整理重點</button>
+    </div>
+    <div id="decisionCards"></div>
+
+    <div class="scanbar" id="scanbar"></div>
+    <div class="briefing">
+      <div class="section-eyebrow">今日追蹤清單</div>
+      <div class="section-title">彙整代辦事項</div>
+      <div id="briefingList"></div>
+    </div>
+    <div class="category">
+      <div class="section-title">行事曆提醒</div>
+      <div id="calendarList"></div>
+    </div>
+    <div class="category">
+      <div class="section-title">邀課信件</div>
+      <div id="teachingList"></div>
+    </div>
+  </div>
+
+  <!-- ===================== WEEK PANEL ===================== -->
+  <div class="panel" id="panel-week">
+    <div class="scanbar" id="weekScanbar"></div>
+    <div class="section-eyebrow">本月總覽</div>
+    <div class="grid-head">
+      <button class="icon-btn" id="gridPrevBtn" title="上個月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="section-title" id="gridMonthLabel" style="margin:0;"></div>
+      <button class="icon-btn" id="gridNextBtn" title="下個月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="section-eyebrow" style="margin-top:26px;">明細</div>
+    <div class="section-title">依日期排列（未來 30 天，只列有事的日子）</div>
+    <div id="weekDayList"></div>
+  </div>
+
+  <!-- ===================== DOCS PANEL ===================== -->
+  <div class="panel" id="panel-docs">
+    <div class="section-eyebrow">上傳新內容</div>
+    <div class="section-title">公文／會議記錄分析</div>
+    <div class="doc-upload">
+      <div class="type-select">
+        <label><input type="radio" name="docType" value="doc" checked> 公文</label>
+        <label><input type="radio" name="docType" value="meeting"> 會議記錄</label>
+      </div>
+      <textarea id="docInput" placeholder="貼上公文內容，或會議記錄逐字稿／摘要…"></textarea>
+      <div class="row">
+        <input type="file" id="docFile" accept=".txt,.md">
+      </div>
+      <div class="row">
+        <button class="btn block" id="analyzeBtn">分析並追蹤</button>
+      </div>
+      <div class="row">
+        <button class="btn secondary block" id="mailReminderBtn">寄提醒信給自己</button>
+      </div>
+      <div class="row">
+        <button class="btn secondary block" id="clearBtn">清空</button>
+      </div>
+      <div class="doc-hint" id="docHint">公文：AI 會判斷急迫程度、擷取期限，並草擬一份回覆（僅供草稿，需你確認後手動送出）。</div>
+      <div class="doc-hint">「寄提醒信給自己」會開啟你手機/電腦預設的寄信 App，收件人留空、內文帶入這裡的文字——網頁沒辦法自動夾帶附件或直接寄出，需要你自己填收件人後按送出。</div>
+      <div class="status-line" id="docStatus"></div>
+    </div>
+    <div class="section-eyebrow">追蹤中</div>
+    <div class="section-title">清單</div>
+    <div id="docList"></div>
+  </div>
+
+  <!-- ===================== LAB PANEL ===================== -->
+  <div class="panel" id="panel-lab">
+    <div class="section-eyebrow">試劑計算</div>
+    <div class="section-title">單次稀釋（C₁V₁ = C₂V₂）</div>
+    <div class="doc-upload calc-box">
+      <div class="calc-field"><label>試劑名稱</label><input type="text" id="c1Name" placeholder="例如 Nafomastat"></div>
+      <div class="calc-field-row">
+        <div class="calc-field"><label>C₁（stock）</label><input type="number" id="c1Val" placeholder="20"></div>
+        <div class="calc-field"><label>單位</label><select id="c1Unit"><option value="M">M</option><option value="mM" selected>mM</option><option value="uM">µM</option><option value="nM">nM</option><option value="pM">pM</option></select></div>
+      </div>
+      <div class="calc-field"><label>V₁（取用體積，留白＝待計算）</label><input type="number" id="v1Val" placeholder="留白＝待計算"></div>
+      <div class="calc-field-row">
+        <div class="calc-field"><label>C₂（目標濃度）</label><input type="number" id="c2Val" placeholder="2"></div>
+        <div class="calc-field"><label>單位</label><select id="c2Unit"><option value="M">M</option><option value="mM">mM</option><option value="uM" selected>µM</option><option value="nM">nM</option><option value="pM">pM</option></select></div>
+      </div>
+      <div class="calc-field-row">
+        <div class="calc-field"><label>V₂（目標總體積）</label><input type="number" id="v2Val" placeholder="50"></div>
+        <div class="calc-field"><label>體積單位</label><input type="text" id="volUnit" value="uL"></div>
+      </div>
+      <div class="calc-field"><label>稀釋液名稱</label><input type="text" id="diluentName" value="PBS"></div>
+      <div class="calc-field"><label>要計算哪一項？</label>
+        <select id="solveFor">
+          <option value="v1">V₁（已知 C₁ C₂ V₂）</option>
+          <option value="c2">C₂（已知 C₁ V₁ V₂）</option>
+          <option value="v2">V₂（已知 C₁ V₁ C₂）</option>
+          <option value="c1">C₁（已知 V₁ C₂ V₂）</option>
+        </select>
+      </div>
+      <div class="row"><button class="btn block" id="calcSingleBtn">計算</button></div>
+      <div class="row"><button class="btn secondary block" id="addSingleToNotesBtn" disabled>加入方法紀錄</button></div>
+      <div class="calc-result" id="singleResult"></div>
+    </div>
+
+    <div class="section-title">連續稀釋（Serial Dilution）</div>
+    <div class="doc-upload calc-box">
+      <div class="calc-field"><label>試劑名稱</label><input type="text" id="sdName" placeholder="例如 Nafomastat"></div>
+      <div class="calc-field-row">
+        <div class="calc-field"><label>Stock 濃度</label><input type="number" id="sdC0" placeholder="20"></div>
+        <div class="calc-field"><label>單位</label><select id="sdCUnit"><option value="M">M</option><option value="mM" selected>mM</option><option value="uM">µM</option><option value="nM">nM</option><option value="pM">pM</option></select></div>
+      </div>
+      <div class="calc-field"><label>結果顯示單位</label><select id="sdOutUnit"><option value="M">M</option><option value="mM">mM</option><option value="uM" selected>µM</option><option value="nM">nM</option><option value="pM">pM</option></select></div>
+      <div class="calc-field-row">
+        <div class="calc-field"><label>每次稀釋倍數</label><input type="number" id="sdFactor" placeholder="例如 2 或 10"></div>
+        <div class="calc-field"><label>級數</label><input type="number" id="sdSteps" placeholder="5"></div>
+      </div>
+      <div class="calc-field-row">
+        <div class="calc-field"><label>每管體積</label><input type="number" id="sdVol" placeholder="100"></div>
+        <div class="calc-field"><label>體積單位</label><input type="text" id="sdVolUnit" value="uL"></div>
+      </div>
+      <div class="calc-field"><label>稀釋液名稱</label><input type="text" id="sdDiluent" value="PBS"></div>
+      <div class="row"><button class="btn block" id="calcSerialBtn">計算</button></div>
+      <div class="row"><button class="btn secondary block" id="addSerialToNotesBtn" disabled>加入方法紀錄</button></div>
+      <div class="calc-result" id="serialResult"></div>
+    </div>
+
+    <div class="section-eyebrow">實驗設計</div>
+    <div class="section-title">組別、目的與待做條件</div>
+    <div id="labGroupList"></div>
+    <div class="row"><button class="btn secondary block" id="addGroupBtn">＋ 新增一組實驗設計</button></div>
+
+    <div class="section-eyebrow" style="margin-top:26px;">今天的結果 → 下一步</div>
+    <div class="section-title">AI 建議延伸實驗</div>
+    <div class="doc-upload">
+      <textarea id="labResultInput" placeholder="貼上今天的實驗結果或觀察…"></textarea>
+      <div class="row"><button class="btn block" id="labSuggestBtn">AI 建議下一步實驗</button></div>
+      <div class="status-line" id="labSuggestStatus"></div>
+      <div id="labSuggestions"></div>
+    </div>
+
+    <div class="section-eyebrow">方法紀錄</div>
+    <div class="section-title">試劑配置與步驟</div>
+    <div class="doc-upload">
+      <input type="text" id="labNoteTitle" placeholder="標題" style="width:100%;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;margin-bottom:8px;background:var(--paper);color:var(--ink);">
+      <textarea id="labNoteBody" placeholder="內容…" style="min-height:70px;"></textarea>
+      <div class="row"><button class="btn block" id="labNoteAddBtn">新增紀錄</button></div>
+    </div>
+    <div id="labNoteList"></div>
+  </div>
+
+  <footer id="footerText"></footer>
+</div>
+
+<div class="bottomnav">
+  <div class="navitem active" data-panel="today">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+    <span>今日</span>
+  </div>
+  <div class="navitem" data-panel="week">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M9 16h.01M13 16h.01M17 16h.01M9 13h.01M13 13h.01M17 13h.01"/></svg>
+    <span>本月</span>
+  </div>
+  <div class="navitem" data-panel="docs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+    <span>公文</span>
+  </div>
+  <div class="navitem" data-panel="lab">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6.5L4.5 18a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L15 8.5V2M9 2h6M8 15h8"/></svg>
+    <span>實驗</span>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">設定</div>
+    <div class="field-block">
+      <label>常駐城市（用於外縣市邀課的高鐵提醒）</label>
+      <input type="text" id="homeCityInput" placeholder="例如：台北">
+    </div>
+    <div class="field-block">
+      <label>VIP 聯絡人（逗號分隔，符合的行程/信件會優先排序）</label>
+      <input type="text" id="vipInput" placeholder="例如：王經理, manager@example-corp.com">
+    </div>
+    <div class="field-block">
+      <label>顯示模式</label>
+      <div class="theme-toggle">
+        <div class="theme-opt active" data-theme-choice="light">☀ 淺色</div>
+        <div class="theme-opt" data-theme-choice="dark">● 深色</div>
+      </div>
+    </div>
+    <button class="modal-close" id="settingsCloseBtn">完成</button>
+  </div>
+</div>
+
+<script>
+/* ================= constants ================= */
+/* ================= storage abstraction =================
+ * Real Claude.ai artifacts get a live window.storage bridge.
+ * A plain downloaded HTML file opened directly in a browser does NOT —
+ * so every call falls back to localStorage there instead of silently
+ * no-op'ing. This is what actually persists data when you open this
+ * file straight from disk. */
+const secStorage = {
+  async get(key){
+    if(typeof window.storage !== "undefined"){
+      try { const r = await window.storage.get(key); if(r) return r; } catch(e){}
+    }
+    try {
+      const v = localStorage.getItem("secLocal:" + key);
+      return v === null ? null : { key, value: v };
+    } catch(e){ return null; }
+  },
+  async set(key, value){
+    if(typeof window.storage !== "undefined"){
+      try { const r = await window.storage.set(key, value); if(r) return r; } catch(e){}
+    }
+    try { localStorage.setItem("secLocal:" + key, value); return { key, value }; } catch(e){ return null; }
+  }
+};
+
+const CONC_FACTORS = { "M":1, "mM":1e-3, "uM":1e-6, "nM":1e-9, "pM":1e-12 };
+const CONC_LABELS = { "M":"M", "mM":"mM", "uM":"µM", "nM":"nM", "pM":"pM" };
+const TW_STATIONS = { "台北":"台北","板橋":"板橋","桃園":"桃園","新竹":"新竹","苗栗":"苗栗","台中":"台中","彰化":"彰化","雲林":"雲林","嘉義":"嘉義","台南":"台南","高雄":"左營" };
+// Full city/county list for the weather picker — independent of TW_STATIONS,
+// which only covers places with a THSR stop and is used solely for the
+// THSR ticket-suggestion chip elsewhere.
+
+
+const HOME_CITY_KEY = "secretary-home-city";
+const VIP_KEY = "secretary-vip-list";
+const TRACKED_KEY = "secretary-tracked-list";
+const LAB_GROUPS_KEY = "secretary-lab-groups-v2";
+const LAB_NOTE_KEY = "secretary-lab-methods-v2";
+const LAB_SEEDED_KEY = "secretary-lab-seeded-v2";
+const THEME_KEY = "secretary-theme";
+
+const SEED_LAB_GROUPS = [
+  { id:"grp-seed-1", purpose:"", control:"", note:"",
+    treatments:[{ id:"grp-seed-1-t1", text:"MCD+Nafomastat" }, { id:"grp-seed-1-t2", text:"MCD+Nafomastat+Marimastat" }] },
+  { id:"grp-seed-2", purpose:"", control:"", note:"",
+    treatments:[{ id:"grp-seed-2-t1", text:"Fibrinogenolysis+Nafomastat" }] }
+];
+const SEED_LAB_NOTES = [
+  { id:"note-seed-1", title:"Nafomastat 與 venom 反應", body:"Nafomastat 20mM stock取1uL+20uL venom, incubate 37度C 30分鐘" },
+  { id:"note-seed-2", title:"Fibrinogen 受質配置", body:"Fibrinogen 2mg/mL 泡2mL" },
+  { id:"note-seed-3", title:"Marimastat 稀釋", body:"Marimastat(20mM stock)取5uL+PBS 45uL" },
+  { id:"note-seed-4", title:"Nafomastat 稀釋（PBS版）", body:"Nafomastat(20mM stock) 取10uL+PBS 90uL" }
+];
+
+// Real events pulled from the user's Google Calendar (工作/聚會) — seeded once
+// into the custom-events store below, then behaves exactly like anything
+// they add/import themselves (editable, deletable, offset computed live).
+const REAL_CALENDAR_SEED = [
+  { id:"gcal-1", subject:"值", date:"2026-08-18", time:"07:30-16:00", location:"" },
+  { id:"gcal-2", subject:"嘉長 解毒劑", date:"2026-08-19", time:"10:00", location:"嘉義" },
+  { id:"gcal-3", subject:"1", date:"2026-08-27", time:"09:00", location:"" },
+  { id:"gcal-4", subject:"值", date:"2026-08-24", time:"07:30-16:00", location:"" },
+  { id:"gcal-5", subject:"8:00-17:00 三總", date:"2026-08-25", time:"09:00", location:"B1 第二演講廳" },
+  { id:"gcal-6", subject:"poster交稿", date:"2026-08-28", time:"09:00", location:"" },
+  { id:"gcal-7", subject:"值", date:"2026-08-31", time:"07:30-16:00", location:"" },
+  { id:"gcal-8", subject:"E", date:"2026-09-01", time:"16:00-22:00", location:"" },
+  { id:"gcal-9", subject:"留", date:"2026-09-03", time:"12:30-14:30", location:"" },
+  { id:"gcal-10", subject:"部會", date:"2026-09-03", time:"12:30-16:00", location:"" },
+  { id:"gcal-11", subject:"9:00-10:00 R501工作討論", date:"2026-09-04", time:"09:00", location:"" },
+  { id:"gcal-12", subject:"14:00 jump", date:"2026-09-04", time:"09:00", location:"" },
+  { id:"gcal-13", subject:"10:40 招標", date:"2026-09-08", time:"09:00", location:"" },
+  { id:"gcal-14", subject:"APAMT籌備會", date:"2026-09-10", time:"09:00", location:"" }
+];
+// Known shift-duty codes with their standard hours, so the app can label
+// them correctly even from bare single-character calendar entries.
+const SHIFT_CODES = { "值":"07:30-16:00", "留":"12:30-14:30", "部會":"12:30-16:00", "E":"16:00-22:00", "N":"22:00-08:00(隔天)" };
+const CAL_EVENTS = [];
+const TEACHING_EVENTS = [];
+const NOISE = ["電商特賣活動","航空哩程通知","訂閱電子報","會員優惠活動","信用卡消費回報（僅供存查）","品牌新品快訊","展會邀請行銷信","App 更新通知"];
+
+/* ================= brand mark & favicon ================= */
+function brandMarkSvgMarkup(){
+  return `<svg viewBox="0 0 88 88" fill="none">
+    <path d="M60.4 55.5 A20 20 0 1 1 60.4 32.5" style="stroke:var(--mark-c)" stroke-width="9.6" stroke-linecap="round"/>
+    <path d="M45.5 34 L45.5 54 L54.5 54" style="stroke:var(--mark-l)" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+function updateFavicon(theme){
+  const cCol = theme === "dark" ? "%23B98CA0" : "%233A4854";
+  const lCol = theme === "dark" ? "%23D9AE5C" : "%23C4962E";
+  const bg = theme === "dark" ? "%23241E1A" : "%23F2EEE7";
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88'><rect width='88' height='88' rx='18' fill='${bg}'/><path d='M60.4 55.5 A20 20 0 1 1 60.4 32.5' stroke='${cCol}' stroke-width='9.6' stroke-linecap='round' fill='none'/><path d='M45.5 34 L45.5 54 L54.5 54' stroke='${lCol}' stroke-width='4.8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>`;
+  document.getElementById("favicon").href = "data:image/svg+xml," + svg;
+}
+
+/* ================= theme ================= */
+async function getTheme(){ try { const r = await secStorage.get(THEME_KEY); return r ? r.value : "light"; } catch(e){ return "light"; } }
+async function setTheme(v){ try { await secStorage.set(THEME_KEY, v); } catch(e){} }
+function applyTheme(theme){
+  document.body.setAttribute("data-theme", theme);
+  document.querySelectorAll(".theme-opt").forEach(el => el.classList.toggle("active", el.dataset.themeChoice === theme));
+  updateFavicon(theme);
+}
+
+/* ================= custom calendar events (manual add / .ics import) ================= */
+const CUSTOM_EVENTS_KEY = "secretary-custom-events";
+async function getCustomEvents(){ try { const r = await secStorage.get(CUSTOM_EVENTS_KEY); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function setCustomEvents(list){ try { await secStorage.set(CUSTOM_EVENTS_KEY, JSON.stringify(list)); } catch(e){} }
+const REAL_CAL_SEEDED_KEY = "secretary-real-cal-seeded";
+async function ensureRealCalendarSeed(){
+  try { const seeded = await secStorage.get(REAL_CAL_SEEDED_KEY); if(seeded) return; } catch(e){}
+  const existing = await getCustomEvents();
+  if(existing.length === 0) await setCustomEvents(REAL_CALENDAR_SEED);
+  try { await secStorage.set(REAL_CAL_SEEDED_KEY, "1"); } catch(e){}
+}
+// One-time fixup for anyone who already seeded calendar data before shift-code
+// hours and the 嘉長→嘉義 location were known. Only touches entries that still
+// have the original placeholder values, so it never overwrites a manual edit.
+const DATA_FIXUP_KEY = "secretary-data-fixup-v1";
+async function applyDataFixups(){
+  try { const done = await secStorage.get(DATA_FIXUP_KEY); if(done) return; } catch(e){}
+  const events = await getCustomEvents();
+  let changed = false;
+  for(const ev of events){
+    if(SHIFT_CODES[ev.subject] && ev.time === "09:00"){ ev.time = SHIFT_CODES[ev.subject]; changed = true; }
+    if(ev.id === "gcal-2" && !ev.location){ ev.location = "嘉義"; changed = true; }
+  }
+  if(changed) await setCustomEvents(events);
+  try { await secStorage.set(DATA_FIXUP_KEY, "1"); } catch(e){}
+}
+function offsetFromDate(dateStr){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr + "T00:00:00");
+  return Math.round((d - today) / 86400000);
+}
+// Merges the illustrative demo events with whatever the user has actually
+// added/imported. Custom events carry a real ISO date; offset is computed
+// fresh on every render so it's always accurate for "today".
+async function getAllCalEvents(){
+  const custom = await getCustomEvents();
+  const customShaped = custom.map(c => ({
+    id: c.id, subject: c.subject, offset: offsetFromDate(c.date),
+    time: c.time || "", location: c.location || "", calendar: "自訂", contact: ""
+  }));
+  return [...CAL_EVENTS, ...customShaped];
+}
+function parseICS(text){
+  const events = [];
+  const blocks = text.split("BEGIN:VEVENT").slice(1);
+  for(const block of blocks){
+    const body = block.split("END:VEVENT")[0];
+    const getField = (name) => {
+      const re = new RegExp("(?:^|\\n)" + name + "(;[^:\\n]*)?:([^\\n\\r]+)", "i");
+      const m = body.match(re);
+      return m ? m[2].trim() : "";
+    };
+    const summary = getField("SUMMARY").replace(/\\,/g, ",").replace(/\\n/gi, " ");
+    const location = getField("LOCATION").replace(/\\,/g, ",");
+    const dtstart = getField("DTSTART");
+    if(!dtstart) continue;
+    const dateOnly = dtstart.replace(/[^0-9T]/g, "").slice(0,8);
+    if(dateOnly.length < 8) continue;
+    const y = dateOnly.slice(0,4), mo = dateOnly.slice(4,6), da = dateOnly.slice(6,8);
+    let timeStr = "";
+    if(dtstart.includes("T")){
+      const t = dtstart.split("T")[1].replace(/[^0-9]/g, "");
+      if(t.length >= 4) timeStr = t.slice(0,2) + ":" + t.slice(2,4);
+    }
+    events.push({ subject: summary || "（無標題）", date: `${y}-${mo}-${da}`, time: timeStr, location: location || "" });
+  }
+  return events;
+}
+async function renderCustomEventList(){
+  const list = await getCustomEvents();
+  const wrap = document.getElementById("customEventList");
+  wrap.innerHTML = "";
+  if(list.length === 0) return;
+  const sorted = [...list].sort((a,b) => a.date.localeCompare(b.date));
+  for(const ev of sorted){
+    const card = document.createElement("div");
+    card.className = "note-card";
+    card.innerHTML = `
+      <div class="note-top">
+        <div class="note-title">${ev.subject}</div>
+        <div style="display:flex;gap:12px;flex-shrink:0;">
+          <span class="note-del" data-ev-edit="${ev.id}">編輯</span>
+          <span class="note-del" data-ev-del="${ev.id}">刪除</span>
+        </div>
+      </div>
+      <div class="note-body" style="font-family:inherit;">${ev.date}${ev.time ? " · " + ev.time : ""}${ev.location ? " · " + ev.location : ""}</div>
+      <div class="edit-box" data-ev-editbox="${ev.id}" style="display:none;">
+        <input type="text" data-ev-f="title" value="${ev.subject.replace(/"/g,'&quot;')}" placeholder="標題">
+        <div class="row" style="margin-top:8px;">
+          <input type="date" data-ev-f="date" value="${ev.date}">
+          <input type="text" data-ev-f="time" value="${ev.time||""}" placeholder="時間，例如 07:30-16:00">
+        </div>
+        <input type="text" data-ev-f="location" value="${ev.location||""}" placeholder="地點（選填）" style="margin-top:8px;">
+        <div class="row"><button class="btn secondary" data-ev-save="${ev.id}">儲存修改</button></div>
+      </div>`;
+    const editBox = card.querySelector(`[data-ev-editbox="${ev.id}"]`);
+    card.querySelector(`[data-ev-edit="${ev.id}"]`).addEventListener("click", () => {
+      editBox.style.display = editBox.style.display === "none" ? "block" : "none";
+    });
+    card.querySelector(`[data-ev-save="${ev.id}"]`).addEventListener("click", async () => {
+      const cur = await getCustomEvents();
+      const idx = cur.findIndex(x => x.id === ev.id);
+      if(idx >= 0){
+        const titleVal = editBox.querySelector('[data-ev-f="title"]').value.trim();
+        const dateVal = editBox.querySelector('[data-ev-f="date"]').value;
+        cur[idx].subject = titleVal || cur[idx].subject;
+        cur[idx].date = dateVal || cur[idx].date;
+        cur[idx].time = editBox.querySelector('[data-ev-f="time"]').value.trim();
+        cur[idx].location = editBox.querySelector('[data-ev-f="location"]').value.trim();
+        await setCustomEvents(cur);
+      }
+      renderCustomEventList(); refreshAll();
+    });
+    card.querySelector(`[data-ev-del="${ev.id}"]`).addEventListener("click", async () => {
+      const cur = await getCustomEvents();
+      await setCustomEvents(cur.filter(x => x.id !== ev.id));
+      renderCustomEventList(); refreshAll();
+    });
+    wrap.appendChild(card);
+  }
+}
+function setupCalendarImport(){
+  document.getElementById("addEventBtn").addEventListener("click", async () => {
+    const title = document.getElementById("newEventTitle").value.trim();
+    const date = document.getElementById("newEventDate").value;
+    const time = document.getElementById("newEventTime").value.trim();
+    const location = document.getElementById("newEventLocation").value.trim();
+    const status = document.getElementById("calImportStatus");
+    if(!title || !date){ status.className = "status-line err"; status.textContent = "請至少填標題與日期。"; return; }
+    const list = await getCustomEvents();
+    list.push({ id:"cev-"+Date.now(), subject:title, date, time, location });
+    await setCustomEvents(list);
+    document.getElementById("newEventTitle").value = "";
+    document.getElementById("newEventDate").value = "";
+    document.getElementById("newEventTime").value = "";
+    document.getElementById("newEventLocation").value = "";
+    status.className = "status-line"; status.textContent = "已新增。";
+    renderCustomEventList(); refreshAll();
+  });
+  document.getElementById("importIcsBtn").addEventListener("click", () => {
+    const fileInput = document.getElementById("icsFile");
+    const status = document.getElementById("calImportStatus");
+    const file = fileInput.files[0];
+    if(!file){ status.className = "status-line err"; status.textContent = "請先選擇 .ics 檔案。"; return; }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = parseICS(reader.result);
+        if(parsed.length === 0){ status.className = "status-line err"; status.textContent = "沒有解析到任何事件，檔案格式可能不支援。"; return; }
+        const list = await getCustomEvents();
+        // Skip anything already imported (same title + date) so re-importing the
+        // same monthly export doesn't create duplicate entries.
+        const existingSig = new Set(list.map(e => e.subject + "|" + e.date));
+        let added = 0, skipped = 0;
+        parsed.forEach((p, i) => {
+          const sig = p.subject + "|" + p.date;
+          if(existingSig.has(sig)){ skipped++; return; }
+          list.push({ id:"cev-"+Date.now()+"-"+i, subject:p.subject, date:p.date, time:p.time, location:p.location });
+          existingSig.add(sig);
+          added++;
+        });
+        await setCustomEvents(list);
+        status.className = "status-line";
+        status.textContent = skipped > 0
+          ? `已匯入 ${added} 筆新事件，${skipped} 筆與現有行程重複已跳過。`
+          : `已匯入 ${added} 筆事件。`;
+        renderCustomEventList(); refreshAll();
+      } catch(err){ status.className = "status-line err"; status.textContent = "匯入失敗：" + err.message; }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("importScreenshotBtn").addEventListener("click", async () => {
+    const fileInput = document.getElementById("calScreenshotFile");
+    const status = document.getElementById("calImportStatus");
+    const btn = document.getElementById("importScreenshotBtn");
+    const file = fileInput.files[0];
+    if(!file){ status.className = "status-line err"; status.textContent = "請先選擇一張截圖。"; return; }
+    btn.disabled = true; status.className = "status-line"; status.textContent = "AI 判讀截圖中…";
+    try {
+      const base64 = await fileToBase64(file);
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+      const prompt = `今天的日期是 ${todayStr}。請閱讀這張行事曆／日曆截圖，擷取所有看得到的行程。只回傳一個 JSON 陣列，不要其他文字、不要 markdown code fence：
+[{"subject":"標題","date":"YYYY-MM-DD","time":"時間或空字串","location":"地點或空字串"}]
+若截圖沒有明確標示年份，請依今天日期推斷最合理的年份。若某個行程完全看不出正確日期，請跳過該筆，不要用今天日期硬填。`;
+      const raw = await callClaudeVision(base64, file.type || "image/png", prompt, 1500);
+      const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      if(!Array.isArray(parsed) || parsed.length === 0){
+        status.className = "status-line err"; status.textContent = "沒有從截圖判讀到行程，換一張更清楚的截圖再試試。";
+        return;
+      }
+      const list = await getCustomEvents();
+      const existingSig = new Set(list.map(e => e.subject + "|" + e.date));
+      let added = 0, skipped = 0, invalid = 0;
+      parsed.forEach((p, i) => {
+        if(!p.date || !/^\d{4}-\d{2}-\d{2}$/.test(p.date)){ invalid++; return; }
+        const sig = (p.subject||"") + "|" + p.date;
+        if(existingSig.has(sig)){ skipped++; return; }
+        list.push({ id:"cev-"+Date.now()+"-"+i, subject:p.subject||"（未命名）", date:p.date, time:p.time||"", location:p.location||"" });
+        existingSig.add(sig);
+        added++;
+      });
+      await setCustomEvents(list);
+      status.className = "status-line";
+      status.textContent = `已從截圖匯入 ${added} 筆新事件`
+        + (skipped>0 ? `，${skipped} 筆重複已跳過` : "")
+        + (invalid>0 ? `，${invalid} 筆日期無法判讀已略過` : "")
+        + "。建議檢查一下判讀是否正確。";
+      renderCustomEventList(); refreshAll();
+    } catch(err){
+      status.className = "status-line err"; status.textContent = "判讀失敗：" + err.message + "（可重試，或改用 .ics 匯入）";
+    } finally { btn.disabled = false; }
+  });
+}
+
+/* ================= generic per-item state ================= */
+function storageKey(id){ return "secretary:" + id; }
+async function getState(id){
+  try { const r = await secStorage.get(storageKey(id)); return r ? JSON.parse(r.value) : { done:false, note:"", prep:"" }; }
+  catch(e){ return { done:false, note:"", prep:"" }; }
+}
+async function setState(id, state){ try { await secStorage.set(storageKey(id), JSON.stringify(state)); } catch(e){} }
+
+async function getHomeCity(){ try { const r = await secStorage.get(HOME_CITY_KEY); return r ? r.value : "台北"; } catch(e){ return "台北"; } }
+async function setHomeCity(v){ try { await secStorage.set(HOME_CITY_KEY, v); } catch(e){} }
+async function getVipList(){ try { const r = await secStorage.get(VIP_KEY); return r ? r.value : ""; } catch(e){ return ""; } }
+async function setVipList(v){ try { await secStorage.set(VIP_KEY, v); } catch(e){} }
+async function getTracked(){ try { const r = await secStorage.get(TRACKED_KEY); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function setTracked(list){ try { await secStorage.set(TRACKED_KEY, JSON.stringify(list)); } catch(e){} }
+async function getLabGroups(){ try { const r = await secStorage.get(LAB_GROUPS_KEY); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function setLabGroups(list){ try { await secStorage.set(LAB_GROUPS_KEY, JSON.stringify(list)); } catch(e){} }
+async function getLabNotes(){ try { const r = await secStorage.get(LAB_NOTE_KEY); return r ? JSON.parse(r.value) : []; } catch(e){ return []; } }
+async function setLabNotes(list){ try { await secStorage.set(LAB_NOTE_KEY, JSON.stringify(list)); } catch(e){} }
+async function ensureLabSeed(){
+  try { const seeded = await secStorage.get(LAB_SEEDED_KEY); if(seeded) return; } catch(e){}
+  const groups = await getLabGroups(); const notes = await getLabNotes();
+  if(groups.length === 0) await setLabGroups(SEED_LAB_GROUPS);
+  if(notes.length === 0) await setLabNotes(SEED_LAB_NOTES);
+  try { await secStorage.set(LAB_SEEDED_KEY, "1"); } catch(e){}
+}
+
+function isVip(contact, vipRaw){
+  if(!contact || !vipRaw) return false;
+  const keywords = vipRaw.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  const c = contact.toLowerCase();
+  return keywords.some(k => k && c.includes(k));
+}
+function urgencyOf(offset){
+  if(offset === null || offset === undefined) return { tier:"info", tag:"tag-info", label:"待確認" };
+  if(offset < 0) return { tier:"overdue", tag:"tag-overdue", label:`已逾期 ${Math.abs(offset)} 天` };
+  if(offset === 0) return { tier:"urgent", tag:"tag-urgent", label:"今天" };
+  if(offset === 1) return { tier:"urgent", tag:"tag-urgent", label:"明天" };
+  if(offset <= 3) return { tier:"soon", tag:"tag-soon", label:`${offset} 天後` };
+  return { tier:"calm", tag:"tag-calm", label:`${offset} 天後` };
+}
+const TIER_ORDER = { overdue:0, urgent:1, soon:2, calm:3, info:4 };
+function effectiveTier(offset, vip){
+  const base = TIER_ORDER[urgencyOf(offset).tier];
+  return vip ? Math.max(0, base-1) : base;
+}
+// Opens the device's own mail app pre-filled as a reminder-to-self. mailto:
+// links cannot carry attachments (a real browser/platform limitation) — the
+// document text goes in the body instead, not as a file.
+function mailReminderLink(subject, bodyText, label){
+  const mailSubject = encodeURIComponent(subject);
+  const mailBody = encodeURIComponent(bodyText || "");
+  return `<a class="mail-reminder-link" href="mailto:?subject=${mailSubject}&body=${mailBody}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+    ${label || "寄提醒信給自己"}</a>`;
+}
+function thsrChip(location, homeCity){
+  if(!location || location === homeCity) return "";
+  const station = TW_STATIONS[location];
+  if(!station) return "";
+  return `<div class="thsr-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="14" rx="4"/><path d="M4 11h16M8 17l-2 4M16 17l2 4M9 7h2M13 7h2"/></svg>
+    地點在${location}，非常駐城市（${homeCity}）— 建議搭高鐵至<b>${station}站</b>。
+    <a href="https://www.thsrc.com.tw" target="_blank" rel="noopener">前往訂票網站</a></div>`;
+}
+// Same trigger condition as the THSR chip — any event requiring travel away
+// from the home city also gets a receipt/reimbursement mini-checklist.
+function isTransitEvent(location, homeCity){
+  return !!(location && location !== homeCity && TW_STATIONS[location]);
+}
+async function getTransitState(id){
+  try { const r = await secStorage.get("secretary-transit:" + id); return r ? JSON.parse(r.value) : { receiptDone:false, receiptHidden:false, reimburseDone:false, reimburseHidden:false, reimburseDate:"" }; }
+  catch(e){ return { receiptDone:false, receiptHidden:false, reimburseDone:false, reimburseHidden:false, reimburseDate:"" }; }
+}
+async function setTransitState(id, state){ try { await secStorage.set("secretary-transit:" + id, JSON.stringify(state)); } catch(e){} }
+function transitBoxHtml(id, state){
+  const receiptRow = state.receiptHidden ? "" : `
+    <div class="t-row">
+      <label><input type="checkbox" data-t-receipt="${id}" ${state.receiptDone?"checked":""}/> 已繳交單據</label>
+      <span class="t-del" data-t-receipt-del="${id}">刪除</span>
+    </div>`;
+  const reimburseRow = state.reimburseHidden ? "" : `
+    <div class="t-row">
+      <label><input type="checkbox" data-t-reimburse="${id}" ${state.reimburseDone?"checked":""}/> 已核銷入帳</label>
+      <input type="date" data-t-reimburse-date="${id}" value="${state.reimburseDate||""}">
+      <span class="t-del" data-t-reimburse-del="${id}">刪除</span>
+    </div>`;
+  if(!receiptRow && !reimburseRow) return "";
+  return `<div class="transit-box" data-transit-wrap="${id}"><div class="t-label">交通核銷</div>${receiptRow}${reimburseRow}</div>`;
+}
+// Deliberately separate from the shared per-item state/date system — the
+// reimbursement date here is a personal record, not a due date, so it must
+// never feed into urgency sorting or the aggregated to-do list.
+async function wireTransitBox(container, id){
+  const wrapEl = container.querySelector(`[data-transit-wrap="${id}"]`);
+  if(!wrapEl) return;
+  const receiptCb = wrapEl.querySelector(`[data-t-receipt="${id}"]`);
+  if(receiptCb) receiptCb.addEventListener("change", async (e) => {
+    const s = await getTransitState(id); s.receiptDone = e.target.checked; await setTransitState(id, s);
+  });
+  const receiptDel = wrapEl.querySelector(`[data-t-receipt-del="${id}"]`);
+  if(receiptDel) receiptDel.addEventListener("click", async () => {
+    const s = await getTransitState(id); s.receiptHidden = true; await setTransitState(id, s); refreshAll();
+  });
+  const reimburseCb = wrapEl.querySelector(`[data-t-reimburse="${id}"]`);
+  if(reimburseCb) reimburseCb.addEventListener("change", async (e) => {
+    const s = await getTransitState(id); s.reimburseDone = e.target.checked; await setTransitState(id, s);
+  });
+  const reimburseDateEl = wrapEl.querySelector(`[data-t-reimburse-date="${id}"]`);
+  if(reimburseDateEl) reimburseDateEl.addEventListener("change", async (e) => {
+    const s = await getTransitState(id); s.reimburseDate = e.target.value; await setTransitState(id, s);
+  });
+  const reimburseDel = wrapEl.querySelector(`[data-t-reimburse-del="${id}"]`);
+  if(reimburseDel) reimburseDel.addEventListener("click", async () => {
+    const s = await getTransitState(id); s.reimburseHidden = true; await setTransitState(id, s); refreshAll();
+  });
+}
+
+/* ================= AI call helper ================= */
+async function callClaude(prompt, maxTokens){
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens || 1000, messages: [{ role: "user", content: prompt }] })
+  });
+  if(!response.ok) throw new Error("API 呼叫失敗（" + response.status + "）");
+  const data = await response.json();
+  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+}
+async function callClaudeVision(base64Data, mediaType, prompt, maxTokens){
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6", max_tokens: maxTokens || 1500,
+      messages: [{ role: "user", content: [
+        { type: "image", source: { type: "base64", media_type: mediaType, data: base64Data } },
+        { type: "text", text: prompt }
+      ] }]
+    })
+  });
+  if(!response.ok) throw new Error("API 呼叫失敗（" + response.status + "）");
+  const data = await response.json();
+  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+}
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ================= generic item card ================= */
+function prepBoxHtml(id, prepText){
+  return `<div class="prep-box" data-prep-wrap="${id}">
+      <div class="lbl"><span>會前準備重點</span><button class="mini-btn" data-prep-ai="${id}">AI 建議</button></div>
+      <textarea data-prep="${id}" placeholder="先手動記下重點，或按右上角按鈕請 AI 建議…">${prepText || ""}</textarea>
+      <div class="mini-status" data-prep-status="${id}"></div>
+    </div>`;
+}
+function wirePrepBox(container, id, subject, metaLine){
+  const wrapEl = container.querySelector(`[data-prep-wrap="${id}"]`);
+  if(!wrapEl) return;
+  const textarea = wrapEl.querySelector(`[data-prep="${id}"]`);
+  const btn = wrapEl.querySelector(`[data-prep-ai="${id}"]`);
+  const status = wrapEl.querySelector(`[data-prep-status="${id}"]`);
+  let t;
+  textarea.addEventListener("input", () => {
+    clearTimeout(t);
+    t = setTimeout(async () => { const s = await getState(id); s.prep = textarea.value; await setState(id, s); }, 400);
+  });
+  btn.addEventListener("click", async () => {
+    btn.disabled = true; status.textContent = "生成中…";
+    try {
+      const prompt = `你是行政秘書。以下是一場即將召開的會議／行程，請給我 3-4 點簡短的會前準備建議，用條列式，繁體中文，每點不超過20字：\n主旨：${subject}\n時間地點：${metaLine}\n已記錄的準備內容：${textarea.value || "（無）"}`;
+      const text = await callClaude(prompt, 400);
+      textarea.value = (textarea.value ? textarea.value + "\n" : "") + text.trim();
+      const s = await getState(id); s.prep = textarea.value; await setState(id, s);
+      status.textContent = "已加入建議，可自行編輯。";
+    } catch(err){ status.textContent = "生成失敗：" + err.message; }
+    finally { btn.disabled = false; }
+  });
+}
+async function renderItem({ id, subject, tagInfo, srcLabel, srcClass, metaLine, reason, extraHtml, vip, showPrep, resched, showTransit }){
+  const state = await getState(id);
+  const wrap = document.createElement("div");
+  wrap.className = `item ${tagInfo.tier}${state.done ? " done" : ""}${vip ? " vip" : ""}`;
+  const prepHtml = showPrep ? prepBoxHtml(id, state.prep) : "";
+  const transitState = showTransit ? await getTransitState(id) : null;
+  const transitHtml = transitState ? transitBoxHtml(id, transitState) : "";
+  const reschedTag = resched ? `<span class="item-tag tag-soon">待重新安排</span>` : "";
+  wrap.innerHTML = `
+    <label class="item-check"><input type="checkbox" ${state.done ? "checked" : ""}/></label>
+    <div class="item-body">
+      <div class="item-top">
+        <div class="item-subject">${subject}</div>
+        <div class="item-tags">${vip ? '<span class="item-tag tag-vip">★ VIP</span>' : ""}${reschedTag}<span class="item-tag ${tagInfo.tag}">${tagInfo.label}</span></div>
+      </div>
+      <div class="item-meta">${srcLabel ? `<span class="item-src ${srcClass}">${srcLabel}</span>` : ""}${metaLine}</div>
+      ${reason ? `<div class="item-reason">${reason}</div>` : ""}
+      ${extraHtml || ""}
+      ${transitHtml}
+      ${prepHtml}
+      <div class="item-note-label">加註記</div>
+      <textarea class="item-note" placeholder="輸入處理狀態或備註…">${state.note || ""}</textarea>
+    </div>`;
+  wrap.querySelector("input[type=checkbox]").addEventListener("change", async (e) => {
+    const s = await getState(id); s.done = e.target.checked; await setState(id, s);
+    wrap.classList.toggle("done", e.target.checked);
+  });
+  const note = wrap.querySelector(".item-note");
+  let nt;
+  note.addEventListener("input", () => {
+    clearTimeout(nt);
+    nt = setTimeout(async () => { const s = await getState(id); s.note = note.value; await setState(id, s); }, 400);
+  });
+  if(showPrep) wirePrepBox(wrap, id, subject, metaLine);
+  if(showTransit) await wireTransitBox(wrap, id);
+  return wrap;
+}
+
+/* ================= decision cards (opening briefing) ================= */
+async function computeConflicts(){
+  const calEvents = await getAllCalEvents();
+  const all = [...calEvents, ...TEACHING_EVENTS];
+  const byDay = {};
+  all.forEach(e => { (byDay[e.offset] = byDay[e.offset] || []).push(e); });
+  const pairs = [];
+  Object.values(byDay).forEach(list => {
+    if(list.length > 1){
+      for(let i=0;i<list.length-1;i++) pairs.push([list[i], list[i+1]]);
+    }
+  });
+  return pairs;
+}
+async function renderDecisionCards(){
+  const box = document.getElementById("decisionCards");
+  box.innerHTML = "";
+  let count = 0;
+
+  // 1) conflicts
+  const pairs = await computeConflicts();
+  for(const [a,b] of pairs){
+    const sa = await getState(a.id), sb = await getState(b.id);
+    if(sa.resolution || sb.resolution) continue; // already resolved
+    count++;
+    const card = document.createElement("div");
+    card.className = "decision-card";
+    card.innerHTML = `<div class="dc-text">${a.time.split("–")[0]}「${a.subject}」與 ${b.time.split("–")[0]}「${b.subject}」時間重疊。</div>
+      <div class="dc-btns">
+        <button class="dc-btn primary" data-keep="a">保留「${a.subject}」</button>
+        <button class="dc-btn primary" data-keep="b">保留「${b.subject}」</button>
+        <button class="dc-btn" data-keep="later">晚點決定</button>
+      </div>`;
+    card.querySelector('[data-keep="a"]').addEventListener("click", async () => {
+      const sa2 = await getState(a.id); sa2.resolution="kept"; await setState(a.id, sa2);
+      const sb2 = await getState(b.id); sb2.resolution="reschedule"; await setState(b.id, sb2);
+      refreshAll();
+    });
+    card.querySelector('[data-keep="b"]').addEventListener("click", async () => {
+      const sb2 = await getState(b.id); sb2.resolution="kept"; await setState(b.id, sb2);
+      const sa2 = await getState(a.id); sa2.resolution="reschedule"; await setState(a.id, sa2);
+      refreshAll();
+    });
+    card.querySelector('[data-keep="later"]').addEventListener("click", () => card.remove());
+    box.appendChild(card);
+  }
+
+  // 2) overdue tracked docs
+  const tracked = await getTracked();
+  for(const t of tracked){
+    if(t.offset === null || t.offset >= 0) continue;
+    const st = await getState(t.id);
+    if(st.done) continue;
+    count++;
+    const card = document.createElement("div");
+    card.className = "decision-card";
+    card.innerHTML = `<div class="dc-text">「${t.subject}」已超過期限 ${Math.abs(t.offset)} 天。</div>
+      <div class="dc-btns">
+        <button class="dc-btn primary" data-act="view">查看草稿回覆</button>
+        <button class="dc-btn" data-act="done">標記已處理</button>
+        <button class="dc-btn" data-act="delay">延後 3 天再提醒</button>
+      </div>`;
+    card.querySelector('[data-act="view"]').addEventListener("click", () => switchPanel("docs"));
+    card.querySelector('[data-act="done"]').addEventListener("click", async () => {
+      const s = await getState(t.id); s.done = true; await setState(t.id, s); refreshAll();
+    });
+    card.querySelector('[data-act="delay"]').addEventListener("click", async () => {
+      const cur = await getTracked();
+      const idx = cur.findIndex(x => x.id === t.id);
+      if(idx >= 0){ cur[idx].offset = (cur[idx].offset || 0) + 3; await setTracked(cur); }
+      refreshAll();
+    });
+    box.appendChild(card);
+  }
+
+  // 3) unscheduled lab treatments (cap at 2, gentle nudge only)
+  const groups = await getLabGroups();
+  let shown = 0;
+  for(const g of groups){
+    for(const t of g.treatments){
+      if(shown >= 2) break;
+      const st = await getState(t.id);
+      if(st.done) continue;
+      shown++; count++;
+      const card = document.createElement("div");
+      card.className = "decision-card";
+      card.innerHTML = `<div class="dc-text">「${t.text}」還沒排時間。</div>
+        <div class="dc-btns">
+          <button class="dc-btn primary" data-act="goto">去實驗頁安排</button>
+          <button class="dc-btn" data-act="dismiss">先不管</button>
+        </div>`;
+      card.querySelector('[data-act="goto"]').addEventListener("click", () => switchPanel("lab"));
+      card.querySelector('[data-act="dismiss"]').addEventListener("click", () => card.remove());
+      box.appendChild(card);
+    }
+  }
+
+  document.getElementById("briefingUpdated").textContent = count > 0
+    ? `${count} 件需要留意` : "目前沒有需要留意的事";
+}
+
+function setGreeting(){
+  const h = new Date().getHours();
+  const g = h < 5 ? "夜深了" : h < 12 ? "早安" : h < 18 ? "午安" : "晚安";
+  document.getElementById("greetingText").textContent = g;
+  document.getElementById("greetingSub").textContent = "以下是今天的重點";
+}
+
+/* ================= daily panel ================= */
+async function renderDaily(){
+  const homeCity = await getHomeCity();
+  const vipRaw = await getVipList();
+  const tracked = await getTracked();
+  const calEvents = await getAllCalEvents();
+
+  const overdueTracked = tracked.filter(t => t.offset !== null && t.offset < 0).length;
+  document.getElementById("scanbar").innerHTML = [
+    [calEvents.length + TEACHING_EVENTS.length, "筆行事曆項目"],
+    [tracked.length, "件追蹤中"],
+    [overdueTracked, "件已逾期", overdueTracked>0]
+  ].map(s => `<div class="scanstat"><div class="num${s[2]?' overdue':''}">${s[0]}</div><div class="lbl">${s[1]}</div></div>`).join("");
+
+  const combined = [];
+  for(const ev of calEvents){
+    const st = await getState(ev.id);
+    const vip = isVip(ev.contact, vipRaw);
+    combined.push({ id:ev.id, subject:ev.subject, offset:ev.offset, vip, showPrep: ev.offset<=1, resched: st.resolution==="reschedule",
+      metaLine:`${ev.time} · ${ev.location} · ${ev.calendar}`, srcLabel:"行事曆", srcClass:"cal",
+      reason: ev.offset<=1 ? "近期行程，建議確認是否需要提前準備。" : "行程已排定。",
+      extraHtml: thsrChip(ev.location, homeCity), showTransit: isTransitEvent(ev.location, homeCity) });
+  }
+  for(const t of TEACHING_EVENTS){
+    const st = await getState(t.id);
+    const vip = isVip(t.sender, vipRaw);
+    const mailBody = `${t.subject}\n${t.time} · ${t.location} · ${t.sender}\n\n${t.reason}`;
+    combined.push({ id:t.id, subject:t.subject, offset:t.offset, vip, showPrep: t.offset<=1, resched: st.resolution==="reschedule",
+      metaLine:`${t.time} · ${t.location} · ${t.sender}`, srcLabel:"邀課", srcClass:"doc",
+      reason:t.reason, extraHtml: thsrChip(t.location, homeCity) + mailReminderLink("邀課提醒：" + t.subject, mailBody, "寄提醒信給自己（記得帶素材去 Claude 用技能包）"),
+      showTransit: isTransitEvent(t.location, homeCity) });
+  }
+  for(const d of tracked){
+    const st = await getState(d.id);
+    if(st.done) continue;
+    combined.push({ id:d.id, subject:d.subject, offset:d.offset, vip:false, showPrep:false, resched:false,
+      metaLine: d.kind === "action" ? `會議行動項目 · 負責人：${d.owner || "未指定"}` : "公文追蹤",
+      srcLabel: d.kind === "action" ? "行動項目" : "公文", srcClass: d.kind === "action" ? "action" : "doc",
+      reason:d.summary || "", extraHtml:"" });
+  }
+  const groups = await getLabGroups();
+  for(const g of groups){
+    for(const t of g.treatments){
+      const st = await getState(t.id);
+      if(st.done) continue;
+      combined.push({ id:t.id, subject:t.text, offset:null, vip:false, showPrep:false, resched:false,
+        metaLine: g.purpose ? `實驗待辦 · ${g.purpose}` : "實驗待辦", srcLabel:"實驗", srcClass:"action",
+        reason: g.control ? `對照組：${g.control}` : "待安排時間執行的實驗條件。", extraHtml:"" });
+    }
+  }
+  combined.sort((a,b) => effectiveTier(a.offset, a.vip) - effectiveTier(b.offset, b.vip));
+
+  const briefing = document.getElementById("briefingList");
+  briefing.innerHTML = "";
+  if(combined.length === 0){ briefing.innerHTML = `<div class="empty">目前沒有需要處理的項目。</div>`; }
+  for(const c of combined){
+    briefing.appendChild(await renderItem({ id:c.id, subject:c.subject, tagInfo:urgencyOf(c.offset),
+      srcLabel:c.srcLabel, srcClass:c.srcClass, metaLine:c.metaLine, reason:c.reason, extraHtml:c.extraHtml,
+      vip:c.vip, showPrep:c.showPrep, resched:c.resched, showTransit:c.showTransit }));
+  }
+
+  const calList = document.getElementById("calendarList");
+  calList.innerHTML = "";
+  for(const ev of calEvents){
+    const st = await getState(ev.id);
+    const vip = isVip(ev.contact, vipRaw);
+    calList.appendChild(await renderItem({ id:ev.id, subject:ev.subject, tagInfo:urgencyOf(ev.offset),
+      srcLabel:"行事曆", srcClass:"cal", metaLine:`${ev.time} · ${ev.location} · ${ev.calendar}`,
+      reason: ev.offset<=1 ? "近期行程，建議確認是否需要提前準備。" : "行程已排定。",
+      extraHtml: thsrChip(ev.location, homeCity), vip, showPrep: ev.offset<=1, resched: st.resolution==="reschedule",
+      showTransit: isTransitEvent(ev.location, homeCity) }));
+  }
+
+  const teachList = document.getElementById("teachingList");
+  teachList.innerHTML = "";
+  if(TEACHING_EVENTS.length === 0){ teachList.innerHTML = `<div class="empty">本次掃描未發現邀課信件。</div>`; }
+  for(const t of TEACHING_EVENTS){
+    const vip = isVip(t.sender, vipRaw);
+    const mailBody = `${t.subject}\n${t.time} · ${t.location} · ${t.sender}\n\n${t.reason}`;
+    teachList.appendChild(await renderItem({ id:t.id, subject:t.subject, tagInfo:urgencyOf(t.offset),
+      srcLabel:"邀課", srcClass:"doc", metaLine:`${t.time} · ${t.location} · ${t.sender}`,
+      reason:t.reason, extraHtml: thsrChip(t.location, homeCity) + mailReminderLink("邀課提醒：" + t.subject, mailBody, "寄提醒信給自己（記得帶素材去 Claude 用技能包）"), vip, showPrep: t.offset<=1,
+      showTransit: isTransitEvent(t.location, homeCity) }));
+  }
+}
+
+/* ================= weekly panel (vertical) ================= */
+let gridViewDate = new Date(); gridViewDate.setDate(1); gridViewDate.setHours(0,0,0,0);
+async function renderCalGrid(){
+  const label = document.getElementById("gridMonthLabel");
+  const grid = document.getElementById("calGrid");
+  const y = gridViewDate.getFullYear(), m = gridViewDate.getMonth();
+  label.textContent = `${y} 年 ${m+1} 月`;
+
+  const calEvents = await getAllCalEvents();
+  const all = [...calEvents, ...TEACHING_EVENTS];
+  const offsetCounts = {};
+  all.forEach(e => { offsetCounts[e.offset] = (offsetCounts[e.offset] || 0) + 1; });
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstOfMonth = new Date(y, m, 1);
+  const startDow = firstOfMonth.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+
+  let html = ["日","一","二","三","四","五","六"].map(d => `<div class="cg-dow">${d}</div>`).join("");
+  for(let i=0;i<startDow;i++) html += `<div class="cal-cell blank"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const cellDate = new Date(y, m, d); cellDate.setHours(0,0,0,0);
+    const offset = Math.round((cellDate - today) / 86400000);
+    const isToday = offset === 0;
+    const count = offsetCounts[offset] || 0;
+    html += `<div class="cal-cell${isToday?' today':''}${count>0?' has-events':''}" data-cell-offset="${offset}">
+      <span>${d}</span>
+      ${count>0 ? `<span class="cg-dot"></span>` : ""}
+      ${count>1 ? `<span class="cg-count">${count}</span>` : ""}
+    </div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll(".cal-cell.has-events").forEach(cell => {
+    cell.addEventListener("click", () => {
+      const offset = cell.getAttribute("data-cell-offset");
+      const target = document.querySelector(`[data-day-offset="${offset}"]`);
+      if(target){
+        target.scrollIntoView({ behavior:"smooth", block:"center" });
+        target.classList.add("flash");
+        setTimeout(() => target.classList.remove("flash"), 1200);
+      }
+    });
+  });
+}
+function setupCalGridNav(){
+  document.getElementById("gridPrevBtn").addEventListener("click", () => { gridViewDate.setMonth(gridViewDate.getMonth()-1); renderCalGrid(); });
+  document.getElementById("gridNextBtn").addEventListener("click", () => { gridViewDate.setMonth(gridViewDate.getMonth()+1); renderCalGrid(); });
+}
+async function renderWeekly(){
+  await renderCalGrid();
+  const vipRaw = await getVipList();
+  const tracked = await getTracked();
+  const homeCity = await getHomeCity();
+  const calEvents = await getAllCalEvents();
+  const all = [...calEvents, ...TEACHING_EVENTS];
+
+  const byDay = {};
+  all.forEach(e => { (byDay[e.offset] = byDay[e.offset] || []).push(e); });
+  const conflictIds = new Set();
+  Object.values(byDay).forEach(list => { if(list.length > 1) list.forEach(e => conflictIds.add(e.id)); });
+
+  const overdueTracked = tracked.filter(t => t.offset !== null && t.offset < 0).length;
+  document.getElementById("weekScanbar").innerHTML = [
+    [all.length + tracked.length, "本月項目"],
+    [conflictIds.size, "筆衝突", conflictIds.size>0],
+    [overdueTracked, "件已逾期", overdueTracked>0]
+  ].map(s => `<div class="scanstat"><div class="num${s[2]?' overdue':''}">${s[0]}</div><div class="lbl">${s[1]}</div></div>`).join("");
+
+  const wrap = document.getElementById("weekDayList");
+  wrap.innerHTML = "";
+  const today = new Date(); today.setHours(0,0,0,0);
+  for(let offset=0; offset<=29; offset++){
+    const d = new Date(today); d.setDate(d.getDate()+offset);
+    const w = ["日","一","二","三","四","五","六"][d.getDay()];
+    const dayEvents = all.filter(e => e.offset === offset);
+    const dayTracked = tracked.filter(t => t.offset === offset);
+    if(dayEvents.length === 0 && dayTracked.length === 0 && offset !== 0) continue; // month view: skip empty days except today
+    const block = document.createElement("div");
+    block.className = "day-block";
+    block.setAttribute("data-day-offset", offset);
+    const head = document.createElement("div");
+    head.className = "day-head" + (offset===0 ? " today" : "");
+    head.innerHTML = `<span class="d-dot"></span><span class="d-label">${d.getMonth()+1}/${d.getDate()}（${w}）${offset===0?"・今天":""}</span>`;
+    block.appendChild(head);
+    if(dayEvents.length === 0 && dayTracked.length === 0){
+      const line = document.createElement("div");
+      line.className = "day-empty-line"; line.textContent = "—";
+      block.appendChild(line);
+    } else {
+      for(const ev of dayEvents){
+        const vip = isVip(ev.contact || ev.sender, vipRaw);
+        const item = await renderItem({ id:ev.id, subject: ev.subject + (conflictIds.has(ev.id) ? "（時間重疊）" : ""),
+          tagInfo:urgencyOf(ev.offset), srcLabel: TEACHING_EVENTS.includes(ev) ? "邀課" : "行事曆", srcClass: TEACHING_EVENTS.includes(ev) ? "doc" : "cal",
+          metaLine:`${ev.time} · ${ev.location}`, reason:"", extraHtml: thsrChip(ev.location, homeCity), vip, showPrep:false,
+          showTransit: isTransitEvent(ev.location, homeCity) });
+        if(conflictIds.has(ev.id)) item.style.borderLeftColor = "var(--urgent)";
+        block.appendChild(item);
+      }
+      for(const t of dayTracked){
+        block.appendChild(await renderItem({ id:t.id, subject:t.subject, tagInfo:urgencyOf(t.offset),
+          srcLabel: t.kind === "action" ? "行動項目" : "公文", srcClass: t.kind === "action" ? "action" : "doc",
+          metaLine: t.kind === "action" ? `負責人：${t.owner || "未指定"}` : "公文追蹤", reason:t.summary || "", vip:false, showPrep:false }));
+      }
+    }
+    wrap.appendChild(block);
+  }
+}
+
+/* ================= docs panel ================= */
+async function analyzeDoc(text){
+  const prompt = `你是一個公文追蹤助理。請閱讀以下公文內容，並「只」回傳一個 JSON 物件，不要有其他文字、不要用 markdown code fence包住，格式如下：
+{"subject":"公文主旨（15字內）","urgencyOffset":數字或null,"summary":"一句話摘要","draftReply":"正式禮貌的中文公文回覆草稿，結尾留白讓我自己簽名"}
+公文內容如下：
+---
+${text}
+---`;
+  const raw = await callClaude(prompt, 1000);
+  return JSON.parse(raw.replace(/```json|```/g, "").trim());
+}
+async function analyzeMeeting(text){
+  const prompt = `你是一個會議記錄助理。請閱讀以下會議記錄，找出所有行動項目，只回傳一個 JSON 物件，不要其他文字、不要 markdown code fence：
+{"meetingSubject":"會議主旨","summary":"一句話摘要","actionItems":[{"task":"待辦內容","owner":"負責人或未指定","urgencyOffset":數字或null}]}
+若無明確行動項目，actionItems回傳[]。會議記錄如下：
+---
+${text}
+---`;
+  const raw = await callClaude(prompt, 1200);
+  return JSON.parse(raw.replace(/```json|```/g, "").trim());
+}
+async function renderDocList(){
+  const tracked = await getTracked();
+  const wrap = document.getElementById("docList");
+  wrap.innerHTML = "";
+  if(tracked.length === 0){ wrap.innerHTML = `<div class="empty">尚未追蹤任何公文或行動項目。</div>`; return; }
+  const sorted = [...tracked].sort((a,b) => TIER_ORDER[urgencyOf(a.offset).tier]-TIER_ORDER[urgencyOf(b.offset).tier]);
+  for(const d of sorted){
+    const isDoc = d.kind !== "action";
+    const extraHtml = isDoc ? `<div class="draft-box"><div class="lbl"><span>草擬回覆</span><span style="cursor:pointer;text-decoration:underline;" data-delete="${d.id}">刪除</span></div><textarea data-draft="${d.id}">${d.draftReply || ""}</textarea></div>`
+      : `<div class="item-meta" style="margin-top:6px;"><span style="cursor:pointer;text-decoration:underline;" data-delete="${d.id}">刪除此筆</span></div>`;
+    const card = await renderItem({ id:d.id, subject:d.subject, tagInfo:urgencyOf(d.offset),
+      srcLabel: isDoc ? "公文" : "行動項目", srcClass: isDoc ? "doc" : "action",
+      metaLine: isDoc ? "人工上傳" : `來自會議：${d.sourceMeeting||""} · 負責人：${d.owner||"未指定"}`,
+      reason:d.summary, extraHtml, vip:false, showPrep:false });
+    card.querySelector(`[data-delete="${d.id}"]`).addEventListener("click", async () => {
+      const cur = await getTracked(); await setTracked(cur.filter(x => x.id !== d.id)); refreshAll();
+    });
+    if(isDoc){
+      const draftArea = card.querySelector(`[data-draft="${d.id}"]`);
+      let dt;
+      draftArea.addEventListener("input", () => {
+        clearTimeout(dt);
+        dt = setTimeout(async () => {
+          const cur = await getTracked(); const idx = cur.findIndex(x => x.id === d.id);
+          if(idx >= 0){ cur[idx].draftReply = draftArea.value; await setTracked(cur); }
+        }, 400);
+      });
+    }
+    wrap.appendChild(card);
+  }
+}
+function setupDocUpload(){
+  document.getElementById("docFile").addEventListener("change", (e) => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { document.getElementById("docInput").value = reader.result; };
+    reader.readAsText(file);
+  });
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    document.getElementById("docInput").value = ""; document.getElementById("docStatus").textContent = "";
+  });
+  document.getElementById("mailReminderBtn").addEventListener("click", () => {
+    const text = document.getElementById("docInput").value.trim();
+    const type = document.querySelector('input[name="docType"]:checked').value;
+    const status = document.getElementById("docStatus");
+    if(!text){ status.className = "status-line err"; status.textContent = "請先貼上內容再寄提醒信。"; return; }
+    const today = new Date();
+    const subject = (type === "doc" ? "公文提醒：" : "會議記錄提醒：") + `${today.getMonth()+1}/${today.getDate()}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+    status.className = "status-line"; status.textContent = "已開啟寄信視窗，請自行填寫收件人並送出。";
+  });
+  document.querySelectorAll('input[name="docType"]').forEach(r => r.addEventListener("change", () => {
+    const type = document.querySelector('input[name="docType"]:checked').value;
+    document.getElementById("docHint").textContent = type === "doc"
+      ? "公文：AI 會判斷急迫程度、擷取期限，並草擬一份回覆（僅供草稿，需你確認後手動送出）。"
+      : "會議記錄：AI 會找出「誰要做什麼、什麼時候前」，自動變成可追蹤的行動項目。";
+  }));
+  document.getElementById("analyzeBtn").addEventListener("click", async () => {
+    const text = document.getElementById("docInput").value.trim();
+    const type = document.querySelector('input[name="docType"]:checked').value;
+    const status = document.getElementById("docStatus");
+    const btn = document.getElementById("analyzeBtn");
+    if(!text){ status.textContent = "請先貼上或上傳內容。"; status.className = "status-line err"; return; }
+    btn.disabled = true; status.className = "status-line"; status.textContent = "分析中…";
+    try {
+      const tracked = await getTracked();
+      if(type === "doc"){
+        const result = await analyzeDoc(text);
+        tracked.push({ id:"doc-"+Date.now(), kind:"doc", subject:result.subject||"未命名公文",
+          offset: typeof result.urgencyOffset === "number" ? result.urgencyOffset : null,
+          summary: result.summary||"", draftReply: result.draftReply||"" });
+        status.textContent = "已加入公文追蹤清單。";
+      } else {
+        const result = await analyzeMeeting(text);
+        const items = result.actionItems || [];
+        if(items.length === 0){ status.textContent = "沒有找到明確的行動項目。"; }
+        else {
+          items.forEach((it, idx) => {
+            tracked.push({ id:"action-"+Date.now()+"-"+idx, kind:"action", subject:it.task||"未命名待辦",
+              offset: typeof it.urgencyOffset === "number" ? it.urgencyOffset : null,
+              summary: result.summary||"", owner: it.owner||"未指定", sourceMeeting: result.meetingSubject||"" });
+          });
+          status.textContent = `已擷取 ${items.length} 項行動項目。`;
+        }
+      }
+      await setTracked(tracked);
+      document.getElementById("docInput").value = "";
+      refreshAll();
+    } catch(err){
+      status.className = "status-line err"; status.textContent = "分析失敗：" + err.message;
+    } finally { btn.disabled = false; }
+  });
+}
+
+/* ================= lab panel ================= */
+function fmtNum(n){
+  if(n===null||n===undefined||isNaN(n)) return "";
+  const abs = Math.abs(n); const digits = abs!==0 && abs<1 ? 4 : 3;
+  return (Math.round(n*Math.pow(10,digits))/Math.pow(10,digits)).toString();
+}
+function setupSingleCalc(){
+  const els = {
+    name: document.getElementById("c1Name"), c1: document.getElementById("c1Val"), c1u: document.getElementById("c1Unit"),
+    v1: document.getElementById("v1Val"), c2: document.getElementById("c2Val"), c2u: document.getElementById("c2Unit"),
+    v2: document.getElementById("v2Val"), vu: document.getElementById("volUnit"), diluent: document.getElementById("diluentName"),
+    solveFor: document.getElementById("solveFor"), result: document.getElementById("singleResult"), addBtn: document.getElementById("addSingleToNotesBtn")
+  };
+  let lastLine = "";
+  document.getElementById("calcSingleBtn").addEventListener("click", () => {
+    const target = els.solveFor.value, c1u = els.c1u.value, c2u = els.c2u.value;
+    let c1 = parseFloat(els.c1.value), v1 = parseFloat(els.v1.value), c2 = parseFloat(els.c2.value), v2 = parseFloat(els.v2.value);
+    let c1Base = isNaN(c1) ? NaN : c1*CONC_FACTORS[c1u];
+    let c2Base = isNaN(c2) ? NaN : c2*CONC_FACTORS[c2u];
+    try {
+      if(target==="v1"){ if(isNaN(c1Base)||isNaN(c2Base)||isNaN(v2)) throw 0; v1=(c2Base*v2)/c1Base; els.v1.value=fmtNum(v1); }
+      else if(target==="c2"){ if(isNaN(c1Base)||isNaN(v1)||isNaN(v2)) throw 0; c2Base=(c1Base*v1)/v2; c2=c2Base/CONC_FACTORS[c2u]; els.c2.value=fmtNum(c2); }
+      else if(target==="v2"){ if(isNaN(c1Base)||isNaN(v1)||isNaN(c2Base)) throw 0; v2=(c1Base*v1)/c2Base; els.v2.value=fmtNum(v2); }
+      else if(target==="c1"){ if(isNaN(v1)||isNaN(c2Base)||isNaN(v2)) throw 0; c1Base=(c2Base*v2)/v1; c1=c1Base/CONC_FACTORS[c1u]; els.c1.value=fmtNum(c1); }
+    } catch(e){ els.result.textContent = "請至少填滿其他三個欄位。"; els.addBtn.disabled = true; return; }
+    const diluentVol = v2 - v1;
+    const name = els.name.value.trim()||"試劑", diluent = els.diluent.value.trim()||"PBS", vu = els.vu.value.trim()||"uL";
+    if(diluentVol < 0){ els.result.textContent = `⚠ V₁ 大於 V₂，請確認數值。`; els.addBtn.disabled = true; return; }
+    lastLine = `${name}(${fmtNum(c1)}${CONC_LABELS[c1u]} stock) 取${fmtNum(v1)}${vu} + ${diluent} ${fmtNum(diluentVol)}${vu} → 得 ${fmtNum(c2)}${CONC_LABELS[c2u]}，共 ${fmtNum(v2)}${vu}`;
+    els.result.textContent = lastLine; els.addBtn.disabled = false;
+  });
+  els.addBtn.addEventListener("click", async () => {
+    if(!lastLine) return;
+    const notes = await getLabNotes();
+    notes.unshift({ id:"note-"+Date.now(), title:(els.name.value.trim()||"稀釋")+" 稀釋條件", body:lastLine });
+    await setLabNotes(notes); renderLabNoteList();
+    els.result.textContent += "\n\n✓ 已加入方法紀錄。";
+  });
+}
+function setupSerialCalc(){
+  const els = {
+    name: document.getElementById("sdName"), c0: document.getElementById("sdC0"), cu: document.getElementById("sdCUnit"),
+    outu: document.getElementById("sdOutUnit"), factor: document.getElementById("sdFactor"), steps: document.getElementById("sdSteps"),
+    vol: document.getElementById("sdVol"), vu: document.getElementById("sdVolUnit"), diluent: document.getElementById("sdDiluent"),
+    result: document.getElementById("serialResult"), addBtn: document.getElementById("addSerialToNotesBtn")
+  };
+  let lastTableText = "";
+  document.getElementById("calcSerialBtn").addEventListener("click", () => {
+    const c0 = parseFloat(els.c0.value), factor = parseFloat(els.factor.value), steps = parseInt(els.steps.value,10), vol = parseFloat(els.vol.value);
+    if(isNaN(c0)||isNaN(factor)||isNaN(steps)||isNaN(vol)||factor<=1||steps<=0||vol<=0){
+      els.result.textContent = "請填入 Stock 濃度、稀釋倍數（須大於1）、稀釋級數與每管體積。"; els.addBtn.disabled = true; return;
+    }
+    const name = els.name.value.trim()||"試劑", cu = els.cu.value, outu = els.outu.value;
+    const c0Base = c0*CONC_FACTORS[cu];
+    const vu = els.vu.value.trim()||"uL", diluent = els.diluent.value.trim()||"PBS";
+    const take = vol/factor, add = vol-take;
+    let rows = [], lines = [`${name}　Stock ${fmtNum(c0)}${CONC_LABELS[cu]}　每次稀釋 ${fmtNum(factor)} 倍　每管體積 ${fmtNum(vol)}${vu}`];
+    for(let i=1;i<=steps;i++){
+      const concBase = c0Base/Math.pow(factor,i), conc = concBase/CONC_FACTORS[outu];
+      const source = i===1 ? "Stock" : `第 ${i-1} 管`;
+      rows.push(`<tr><td>第 ${i} 管</td><td>${source}</td><td>${fmtNum(take)}${vu}</td><td>${diluent} ${fmtNum(add)}${vu}</td><td>${fmtNum(conc)}${CONC_LABELS[outu]}</td></tr>`);
+      lines.push(`第${i}管：取${source} ${fmtNum(take)}${vu} + ${diluent} ${fmtNum(add)}${vu} → ${fmtNum(conc)}${CONC_LABELS[outu]}，共 ${fmtNum(vol)}${vu}`);
+    }
+    els.result.innerHTML = `<table><tr><th>管別</th><th>來源</th><th>取用</th><th>加稀釋液</th><th>濃度</th></tr>${rows.join("")}</table>`;
+    lastTableText = lines.join("\n"); els.addBtn.disabled = false;
+  });
+  els.addBtn.addEventListener("click", async () => {
+    if(!lastTableText) return;
+    const notes = await getLabNotes();
+    notes.unshift({ id:"note-"+Date.now(), title:(els.name.value.trim()||"稀釋")+" 連續稀釋", body:lastTableText });
+    await setLabNotes(notes); renderLabNoteList();
+    els.result.innerHTML += `<div style="margin-top:8px;font-family:-apple-system,sans-serif;color:var(--calm);">✓ 已加入方法紀錄。</div>`;
+  });
+}
+async function renderLabGroupList(){
+  const groups = await getLabGroups();
+  const wrap = document.getElementById("labGroupList");
+  wrap.innerHTML = "";
+  if(groups.length === 0){ wrap.innerHTML = `<div class="empty">尚未新增任何實驗設計。</div>`; return; }
+  for(const g of groups){
+    const card = document.createElement("div");
+    card.className = "group-card";
+    card.innerHTML = `
+      <div class="group-field"><label>實驗目的</label><input type="text" data-g-purpose value="${g.purpose||""}" placeholder="例如：測試抑制劑對 XX 反應的影響"></div>
+      <div class="group-field"><label>對照組／控制組</label><input type="text" data-g-control value="${g.control||""}" placeholder="例如：MCD only"></div>
+      <div class="group-field"><label>備註</label><textarea data-g-note placeholder="任何想記下的觀察…">${g.note||""}</textarea></div>
+      <div class="group-treatments">
+        <div class="glbl">實驗組（待做條件）</div>
+        <div data-g-treatments></div>
+        <div class="add-treatment-row">
+          <input type="text" data-g-newtreatment placeholder="新增條件…">
+          <button class="btn secondary" data-g-addtreatment>＋</button>
+        </div>
+      </div>
+      <div class="group-foot"><span data-g-delete>刪除整組實驗設計</span></div>`;
+    const treatWrap = card.querySelector("[data-g-treatments]");
+    if(g.treatments.length === 0){ treatWrap.innerHTML = `<div class="empty" style="padding:10px;">尚無實驗組。</div>`; }
+    else {
+      for(const t of g.treatments){
+        const item = await renderItem({ id:t.id, subject:t.text, tagInfo:urgencyOf(null),
+          srcLabel:"", srcClass:"", metaLine:"", reason:"", vip:false, showPrep:false,
+          extraHtml:`<div class="item-meta" style="margin-top:4px;"><span style="cursor:pointer;text-decoration:underline;" data-t-del="${t.id}">刪除此組</span></div>` });
+        item.querySelector(`[data-t-del="${t.id}"]`).addEventListener("click", async () => {
+          const cur = await getLabGroups(); const idx = cur.findIndex(x => x.id === g.id);
+          if(idx>=0){ cur[idx].treatments = cur[idx].treatments.filter(x => x.id !== t.id); await setLabGroups(cur); }
+          refreshAll();
+        });
+        treatWrap.appendChild(item);
+      }
+    }
+    let ft;
+    const saveFields = () => {
+      clearTimeout(ft);
+      ft = setTimeout(async () => {
+        const cur = await getLabGroups(); const idx = cur.findIndex(x => x.id === g.id);
+        if(idx>=0){
+          cur[idx].purpose = card.querySelector("[data-g-purpose]").value;
+          cur[idx].control = card.querySelector("[data-g-control]").value;
+          cur[idx].note = card.querySelector("[data-g-note]").value;
+          await setLabGroups(cur);
+        }
+      }, 400);
+    };
+    card.querySelector("[data-g-purpose]").addEventListener("input", saveFields);
+    card.querySelector("[data-g-control]").addEventListener("input", saveFields);
+    card.querySelector("[data-g-note]").addEventListener("input", saveFields);
+    const addTreatment = async () => {
+      const input = card.querySelector("[data-g-newtreatment]"); const text = input.value.trim();
+      if(!text) return;
+      const cur = await getLabGroups(); const idx = cur.findIndex(x => x.id === g.id);
+      if(idx>=0){ cur[idx].treatments.push({ id:"t-"+Date.now(), text }); await setLabGroups(cur); }
+      refreshAll();
+    };
+    card.querySelector("[data-g-addtreatment]").addEventListener("click", addTreatment);
+    card.querySelector("[data-g-newtreatment]").addEventListener("keydown", (e) => { if(e.key==="Enter") addTreatment(); });
+    card.querySelector("[data-g-delete]").addEventListener("click", async () => {
+      const cur = await getLabGroups(); await setLabGroups(cur.filter(x => x.id !== g.id)); refreshAll();
+    });
+    wrap.appendChild(card);
+  }
+}
+function setupGroupAdd(){
+  document.getElementById("addGroupBtn").addEventListener("click", async () => {
+    const groups = await getLabGroups();
+    groups.push({ id:"grp-"+Date.now(), purpose:"", control:"", note:"", treatments:[] });
+    await setLabGroups(groups); renderLabGroupList();
+  });
+}
+async function renderLabNoteList(){
+  const notes = await getLabNotes();
+  const wrap = document.getElementById("labNoteList");
+  wrap.innerHTML = "";
+  if(notes.length === 0){ wrap.innerHTML = `<div class="empty">尚未新增任何方法紀錄。</div>`; return; }
+  for(const n of notes){
+    const card = document.createElement("div");
+    card.className = "note-card";
+    card.innerHTML = `<div class="note-top"><div class="note-title">${n.title}</div><div class="note-del" data-note-del="${n.id}">刪除</div></div><div class="note-body">${n.body}</div>`;
+    card.querySelector(`[data-note-del="${n.id}"]`).addEventListener("click", async () => {
+      const cur = await getLabNotes(); await setLabNotes(cur.filter(x => x.id !== n.id)); renderLabNoteList();
+    });
+    wrap.appendChild(card);
+  }
+}
+function setupLabTab(){
+  setupSingleCalc(); setupSerialCalc(); setupGroupAdd();
+  document.getElementById("labNoteAddBtn").addEventListener("click", async () => {
+    const titleInput = document.getElementById("labNoteTitle"), bodyInput = document.getElementById("labNoteBody");
+    const title = titleInput.value.trim(), body = bodyInput.value.trim();
+    if(!title && !body) return;
+    const notes = await getLabNotes();
+    notes.unshift({ id:"note-"+Date.now(), title: title||"（未命名）", body });
+    await setLabNotes(notes); titleInput.value=""; bodyInput.value=""; renderLabNoteList();
+  });
+  document.getElementById("labSuggestBtn").addEventListener("click", async () => {
+    const resultText = document.getElementById("labResultInput").value.trim();
+    const status = document.getElementById("labSuggestStatus"), btn = document.getElementById("labSuggestBtn"), box = document.getElementById("labSuggestions");
+    if(!resultText){ status.textContent = "請先描述今天的實驗結果或觀察。"; status.className = "status-line err"; return; }
+    btn.disabled = true; status.className = "status-line"; status.textContent = "分析中…";
+    try {
+      const prompt = `你是研究助理。以下是今天的實驗結果，請建議 2-4 個值得接著測試的條件組合，只回傳 JSON 陣列，每個元素20字內，不要其他文字：\n["建議一","建議二"]\n結果：\n---\n${resultText}\n---`;
+      const raw = await callClaude(prompt, 500);
+      const suggestions = JSON.parse(raw.replace(/```json|```/g, "").trim());
+      const groups = await getLabGroups();
+      box.innerHTML = "";
+      suggestions.forEach(s => {
+        const chip = document.createElement("div");
+        chip.className = "suggestion-chip";
+        const groupOptions = groups.map(g => `<option value="${g.id}">${g.purpose || "（未命名）"}</option>`).join("");
+        chip.innerHTML = `<span style="flex:1;">${s}</span><select>${groupOptions}<option value="__new__">＋新建</option></select><button>加入</button>`;
+        chip.querySelector("button").addEventListener("click", async () => {
+          const select = chip.querySelector("select");
+          const cur = await getLabGroups();
+          if(select.value === "__new__" || cur.length === 0){
+            cur.push({ id:"grp-"+Date.now(), purpose:"", control:"", note:"", treatments:[{ id:"t-"+Date.now(), text:s }] });
+          } else {
+            const idx = cur.findIndex(x => x.id === select.value);
+            if(idx>=0) cur[idx].treatments.push({ id:"t-"+Date.now(), text:s });
+          }
+          await setLabGroups(cur); chip.remove(); refreshAll();
+        });
+        box.appendChild(chip);
+      });
+      status.textContent = suggestions.length ? "選擇要加入哪一組，再按「加入」。" : "沒有產生建議。";
+    } catch(err){ status.className = "status-line err"; status.textContent = "失敗：" + err.message; }
+    finally { btn.disabled = false; }
+  });
+}
+
+/* ================= nav / settings / init ================= */
+function switchPanel(name){
+  document.querySelectorAll(".navitem").forEach(el => el.classList.toggle("active", el.dataset.panel === name));
+  document.querySelectorAll(".panel").forEach(el => el.classList.toggle("active", el.id === "panel-"+name));
+  window.scrollTo(0,0);
+}
+function setupNav(){
+  document.querySelectorAll(".navitem").forEach(el => el.addEventListener("click", () => switchPanel(el.dataset.panel)));
+}
+function setupSettings(){
+  const overlay = document.getElementById("settingsOverlay");
+  document.getElementById("settingsBtn").addEventListener("click", () => overlay.classList.add("open"));
+  document.getElementById("settingsCloseBtn").addEventListener("click", () => overlay.classList.remove("open"));
+  overlay.addEventListener("click", (e) => { if(e.target === overlay) overlay.classList.remove("open"); });
+
+  document.querySelectorAll(".theme-opt").forEach(el => el.addEventListener("click", async () => {
+    const theme = el.dataset.themeChoice;
+    applyTheme(theme); await setTheme(theme);
+  }));
+}
+async function refreshAll(){
+  await renderDecisionCards();
+  await renderDaily();
+  await renderWeekly();
+  await renderDocList();
+  await renderLabGroupList();
+  await renderLabNoteList();
+}
+async function init(){
+  const theme = await getTheme();
+  applyTheme(theme);
+  document.getElementById("brandMark").innerHTML = brandMarkSvgMarkup() + '<span class="brand-name">隨身秘書</span>';
+
+  const d = new Date();
+  const w = ["日","一","二","三","四","五","六"][d.getDay()];
+  document.getElementById("todayDate").textContent = `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日 星期${w}`;
+  document.getElementById("footerText").innerHTML = `隨身秘書 · 行事曆／公文／實驗資料僅存在本裝置<br>Designed by Carol Lee © ${d.getFullYear()}`;
+  setGreeting();
+
+  const homeCityInput = document.getElementById("homeCityInput");
+  homeCityInput.value = await getHomeCity();
+  let ct;
+  homeCityInput.addEventListener("input", () => {
+    clearTimeout(ct);
+    ct = setTimeout(async () => { await setHomeCity(homeCityInput.value.trim() || "台北"); refreshAll(); }, 500);
+  });
+
+  const vipInput = document.getElementById("vipInput");
+  vipInput.value = await getVipList();
+  let vt;
+  vipInput.addEventListener("input", () => {
+    clearTimeout(vt);
+    vt = setTimeout(async () => { await setVipList(vipInput.value); refreshAll(); }, 500);
+  });
+
+  document.getElementById("refreshBriefingBtn").addEventListener("click", refreshAll);
+
+  setupNav();
+  setupSettings();
+  setupDocUpload();
+  setupLabTab();
+  setupCalendarImport();
+  setupCalGridNav();
+  await ensureLabSeed();
+  await ensureRealCalendarSeed();
+  await applyDataFixups();
+  await refreshAll();
+  await renderCustomEventList();
+}
+init();
+</script>
+</body>
+</html>
